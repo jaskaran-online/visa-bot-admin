@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { apiClient, type SuccessfulAppointment } from "@/lib/api-client"
+import { getAppointment, updateAppointment } from "@/lib/api/appointments"
 import { useToast } from "@/hooks/use-toast"
 import { ArrowLeft, Calendar, MapPin, User, Clock, Mail, Bot, CalendarCheck, AlertCircle } from "lucide-react"
 import { format } from "date-fns"
@@ -18,22 +19,22 @@ export default function AppointmentDetailPage({ params }: { params: { id: string
   const router = useRouter()
   const { toast } = useToast()
 
-  useEffect(() => {
-    const fetchAppointment = async () => {
-      try {
-        const data = await apiClient.getAppointment(params.id)
-        setAppointment(data)
-      } catch (error) {
-        toast({
-          title: "Error fetching appointment details",
-          description: error instanceof Error ? error.message : "Failed to load appointment details. Please try again.",
-          variant: "destructive",
-        })
-      } finally {
-        setIsLoading(false)
-      }
+  const fetchAppointment = async () => {
+    try {
+      const data = await getAppointment(params.id)
+      setAppointment(data)
+    } catch (error) {
+      toast({
+        title: "Error fetching appointment details",
+        description: error instanceof Error ? error.message : "Failed to load appointment details. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
     }
+  }
 
+  useEffect(() => {
     fetchAppointment()
   }, [params.id, toast])
 
@@ -41,7 +42,11 @@ export default function AppointmentDetailPage({ params }: { params: { id: string
     if (!appointment) return
 
     try {
-      await apiClient.confirmAppointment(appointment.id)
+      // Update the appointment status
+      const updatedAppointment = await updateAppointment(appointment.id, {
+        ...appointment,
+        status: "confirmed"
+      })
 
       toast({
         title: "Appointment confirmed",
@@ -49,10 +54,7 @@ export default function AppointmentDetailPage({ params }: { params: { id: string
       })
 
       // Update local state
-      setAppointment({
-        ...appointment,
-        status: "confirmed",
-      } as SuccessfulAppointment)
+      setAppointment(updatedAppointment)
     } catch (error) {
       toast({
         title: "Failed to confirm appointment",
@@ -66,7 +68,11 @@ export default function AppointmentDetailPage({ params }: { params: { id: string
     if (!appointment) return
 
     try {
-      await apiClient.cancelAppointment(appointment.id)
+      // Update the appointment status
+      const updatedAppointment = await updateAppointment(appointment.id, {
+        ...appointment,
+        status: "cancelled"
+      })
 
       toast({
         title: "Appointment cancelled",
@@ -74,10 +80,7 @@ export default function AppointmentDetailPage({ params }: { params: { id: string
       })
 
       // Update local state
-      setAppointment({
-        ...appointment,
-        status: "cancelled",
-      } as SuccessfulAppointment)
+      setAppointment(updatedAppointment)
     } catch (error) {
       toast({
         title: "Failed to cancel appointment",

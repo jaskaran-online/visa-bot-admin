@@ -458,7 +458,7 @@ class ApiClient {
     // Use API key from environment if available
     const apiKey = process.env.NEXT_PUBLIC_API_KEY || localStorage.getItem("api_key")
     const headers: HeadersInit = {
-      "Content-Type": "application/json",
+      "Content-Type": "application/json"
     }
 
     if (apiKey) {
