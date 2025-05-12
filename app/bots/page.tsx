@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Search, Filter, RefreshCw } from "lucide-react"
 import { BotCard } from "@/components/bots/bot-card"
 import { apiClient, type BotResponse } from "@/lib/api-client"
+import { getAllBots, startBot, stopBot, restartBot, deleteBot } from "@/lib/api/bots"
 import { hasPermission } from "@/lib/auth"
 import { useToast } from "@/hooks/use-toast"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -26,7 +27,7 @@ export default function BotsPage() {
 
   const fetchBots = async () => {
     try {
-      const data = await apiClient.getAllBots()
+      const data = await getAllBots()
       setBots(data.bots)
       setFilteredBots(data.bots)
     } catch (error) {
@@ -84,17 +85,17 @@ export default function BotsPage() {
 
   const handleBotAction = async (botId: string, action: string) => {
     try {
-      let response
+      let response;
 
       switch (action) {
         case "start":
-          response = await apiClient.startBot(botId)
+          response = await startBot(botId)
           break
         case "stop":
-          response = await apiClient.stopBot(botId)
+          response = await stopBot(botId)
           break
         case "restart":
-          response = await apiClient.restartBot(botId)
+          response = await restartBot(botId)
           break
         default:
           throw new Error(`Unknown action: ${action}`)
@@ -105,29 +106,8 @@ export default function BotsPage() {
         description: response.message,
       })
 
-      // Update local state to reflect the action
-      setBots((prevBots) =>
-        prevBots.map((bot) => {
-          if (bot.id === botId) {
-            let newStatus = bot.status
-
-            switch (action) {
-              case "start":
-                newStatus = "running"
-                break
-              case "stop":
-                newStatus = "stopped"
-                break
-              case "restart":
-                newStatus = "running"
-                break
-            }
-
-            return { ...bot, status: newStatus }
-          }
-          return bot
-        }),
-      )
+      // After successful action, refresh the bot list
+      fetchBots()
     } catch (error) {
       toast({
         title: `Failed to ${action} bot`,
@@ -139,7 +119,7 @@ export default function BotsPage() {
 
   const handleDeleteBot = async (botId: string) => {
     try {
-      const response = await apiClient.deleteBot(botId)
+      const response = await deleteBot(botId)
 
       toast({
         title: "Bot deleted",

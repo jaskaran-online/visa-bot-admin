@@ -9,6 +9,7 @@ import { Calendar, Search, RefreshCw, Download } from "lucide-react"
 import { AppointmentCard } from "@/components/appointments/appointment-card"
 import { AppointmentFilters } from "@/components/appointments/appointment-filters"
 import { apiClient, type SuccessfulAppointment } from "@/lib/api-client"
+import { getAllAppointments } from "@/lib/api/appointments"
 import { useToast } from "@/hooks/use-toast"
 import { Skeleton } from "@/components/ui/skeleton"
 import { format } from "date-fns"
@@ -29,7 +30,21 @@ export default function AppointmentsPage() {
   const fetchAppointments = async () => {
     try {
       setIsRefreshing(true)
-      const data = await apiClient.getAllAppointments(page)
+      
+      // Create filters object
+      const filters: any = {};
+      
+      if (countryFilter !== "all") {
+        filters.country = countryFilter;
+      }
+      
+      if (dateFilter[0] && dateFilter[1]) {
+        filters.from_date = format(dateFilter[0], "yyyy-MM-dd");
+        filters.to_date = format(dateFilter[1], "yyyy-MM-dd");
+      }
+      
+      // Use the API handler to fetch appointments with filters
+      const data = await getAllAppointments(page, 20, filters);
       setAppointments(data.appointments)
       setFilteredAppointments(data.appointments)
       setTotalPages(Math.ceil(data.total_count / data.page_size))
@@ -50,34 +65,29 @@ export default function AppointmentsPage() {
   }, [page, toast])
 
   useEffect(() => {
-    let result = [...appointments]
-
-    // Apply country filter
-    if (countryFilter !== "all") {
-      result = result.filter((appointment) => appointment.country === countryFilter)
+    // When filter changes, reset to page 1 and fetch with new filters
+    if (page !== 1) {
+      setPage(1);
+    } else {
+      fetchAppointments();
     }
+  }, [countryFilter, dateFilter])
 
-    // Apply date filter
-    if (dateFilter[0] && dateFilter[1]) {
-      result = result.filter((appointment) => {
-        const appointmentDate = new Date(appointment.appointment_date)
-        return appointmentDate >= dateFilter[0]! && appointmentDate <= dateFilter[1]!
-      })
-    }
-
-    // Apply search filter
+  // For client-side filtering of already fetched appointments
+  useEffect(() => {
     if (searchQuery) {
-      const query = searchQuery.toLowerCase()
-      result = result.filter(
+      const query = searchQuery.toLowerCase();
+      const filtered = appointments.filter(
         (appointment) =>
           appointment.email.toLowerCase().includes(query) ||
           appointment.facility_name.toLowerCase().includes(query) ||
           apiClient.getCountryName(appointment.country).toLowerCase().includes(query),
-      )
+      );
+      setFilteredAppointments(filtered);
+    } else {
+      setFilteredAppointments(appointments);
     }
-
-    setFilteredAppointments(result)
-  }, [appointments, countryFilter, dateFilter, searchQuery])
+  }, [appointments, searchQuery])
 
   const handleRefresh = () => {
     fetchAppointments()

@@ -4,6 +4,7 @@ import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { BarChart3, Bot, FileText, Home, LayoutDashboard, Settings, Server, Calendar, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { SystemStatus } from "@/components/system-status"
 
 interface SidebarProps {
   user: {
@@ -122,6 +123,11 @@ export function Sidebar({ user, isOpen, currentPath }: SidebarProps) {
               </li>
             ))}
         </ul>
+        
+        {/* Add System Status Component */}
+        <div className="px-2 mt-4">
+          <SystemStatus />
+        </div>
       </nav>
       <div className="border-t p-4">
         <div className="flex items-center gap-2 text-sm">

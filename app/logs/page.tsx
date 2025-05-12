@@ -7,10 +7,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
 import { apiClient } from "@/lib/api-client"
+import { getAllBots } from "@/lib/api/bots"
 import { hasPermission } from "@/lib/auth"
 import { LogsTable } from "@/components/logs/logs-table"
 import { LogsFilter } from "@/components/logs/logs-filter"
 import { LogsStatistics } from "@/components/logs/logs-statistics"
+import { PollingLogViewer } from "@/components/logs/polling-log-viewer"
 import { Download, RefreshCw, Trash2 } from "lucide-react"
 import {
   AlertDialog,
@@ -31,7 +33,7 @@ export default function LogsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [isClearDialogOpen, setIsClearDialogOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState("all")
+  const [activeTab, setActiveTab] = useState("realtime")
   const [filters, setFilters] = useState({
     botId: "all",
     logLevel: "all",
@@ -63,14 +65,16 @@ export default function LogsPage() {
   }
 
   useEffect(() => {
-    fetchLogs()
-  }, [toast])
+    if (activeTab !== "realtime") {
+      // fetchLogs()
+    }
+  }, [activeTab, toast])
 
   // Add this useEffect to fetch bots data
   useEffect(() => {
     const fetchBots = async () => {
       try {
-        const data = await apiClient.getAllBots()
+        const data = await getAllBots()
         setBots(data.bots || [])
       } catch (error) {
         console.error("Failed to fetch bots:", error)
@@ -108,13 +112,13 @@ export default function LogsPage() {
       result = result.filter(
         (log) =>
           log.message.toLowerCase().includes(query) ||
-          log.botName.toLowerCase().includes(query) ||
+          (log.botName && log.botName.toLowerCase().includes(query)) ||
           (log.context && JSON.stringify(log.context).toLowerCase().includes(query)),
       )
     }
 
     // Apply tab filter
-    if (activeTab !== "all") {
+    if (activeTab !== "all" && activeTab !== "realtime") {
       if (activeTab === "errors") {
         result = result.filter((log) => log.level === "error")
       } else if (activeTab === "warnings") {
@@ -201,10 +205,12 @@ export default function LogsPage() {
             <p className="text-muted-foreground">Monitor and analyze system and bot activity logs</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={handleRefresh} disabled={isRefreshing}>
-              <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-              Refresh
-            </Button>
+            {activeTab !== "realtime" && (
+              <Button variant="outline" onClick={handleRefresh} disabled={isRefreshing}>
+                <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+                Refresh
+              </Button>
+            )}
             <Button variant="outline" onClick={handleExportLogs}>
               <Download className="mr-2 h-4 w-4" />
               Export
@@ -241,38 +247,59 @@ export default function LogsPage() {
           </div>
         </div>
 
-        <LogsFilter bots={bots} onFilterChange={handleFilterChange} filters={filters} />
+        {activeTab !== "realtime" && (
+          <LogsFilter bots={bots} onFilterChange={handleFilterChange} filters={filters} />
+        )}
 
-        <div className="grid gap-4 md:grid-cols-3">
-          <LogsStatistics logs={filteredLogs} isLoading={isLoading} />
-        </div>
+        {activeTab !== "realtime" && (
+          <div className="grid gap-4 md:grid-cols-3">
+            <LogsStatistics logs={filteredLogs} isLoading={isLoading} />
+          </div>
+        )}
 
-        <Tabs defaultValue="all" value={activeTab} onValueChange={handleTabChange} className="space-y-4">
+        <Tabs defaultValue="realtime" value={activeTab} onValueChange={handleTabChange} className="space-y-4">
           <TabsList>
+            <TabsTrigger value="realtime">Real-time Logs</TabsTrigger>
             <TabsTrigger value="all">All Logs</TabsTrigger>
             <TabsTrigger value="errors">Errors</TabsTrigger>
             <TabsTrigger value="warnings">Warnings</TabsTrigger>
             <TabsTrigger value="info">Info</TabsTrigger>
           </TabsList>
 
+          <TabsContent value="realtime" className="space-y-4">
+            <div className="h-[600px]">
+              <PollingLogViewer
+                title="Real-time System Logs"
+                description="Live view of system and bot logs"
+                botId="general"
+                maxEntries={100}
+                pollInterval={30000}
+                canClear={isAdmin}
+                canExport={true}
+              />
+            </div>
+          </TabsContent>
+
           <TabsContent value={activeTab} className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Log Entries</CardTitle>
-                <CardDescription>
-                  {activeTab === "all"
-                    ? "All system logs"
-                    : activeTab === "errors"
-                      ? "Error logs only"
-                      : activeTab === "warnings"
-                        ? "Warning logs only"
-                        : "Information logs only"}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <LogsTable logs={filteredLogs} isLoading={isLoading} />
-              </CardContent>
-            </Card>
+            {activeTab !== "realtime" && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Log Entries</CardTitle>
+                  <CardDescription>
+                    {activeTab === "all"
+                      ? "All system logs"
+                      : activeTab === "errors"
+                        ? "Error logs only"
+                        : activeTab === "warnings"
+                          ? "Warning logs only"
+                          : "Information logs only"}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <LogsTable logs={filteredLogs} isLoading={isLoading} />
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
         </Tabs>
       </div>
