@@ -12,7 +12,7 @@ import { hasPermission } from "@/lib/auth"
 import { LogsTable } from "@/components/logs/logs-table"
 import { LogsFilter } from "@/components/logs/logs-filter"
 import { LogsStatistics } from "@/components/logs/logs-statistics"
-import { RealTimeLogViewer } from "@/components/logs/real-time-log-viewer"
+import { PollingLogViewer } from "@/components/logs/polling-log-viewer"
 import { Download, RefreshCw, Trash2 } from "lucide-react"
 import {
   AlertDialog,
@@ -196,12 +196,6 @@ export default function LogsPage() {
     }
   }
 
-  // Get API base URL
-  const getBaseUrl = () => {
-    // Use the environment variable or the one from server config
-    return process.env.NEXT_PUBLIC_AUTOMATION_API_URL || "https://api.example.com";
-  };
-
   return (
     <MainLayout>
       <div className="flex flex-col gap-4">
@@ -274,15 +268,14 @@ export default function LogsPage() {
 
           <TabsContent value="realtime" className="space-y-4">
             <div className="h-[600px]">
-              <RealTimeLogViewer
+              <PollingLogViewer
                 title="Real-time System Logs"
-                description="Live stream of system and bot logs"
-                streamUrl={`${getBaseUrl()}/logs/stream/general`}
+                description="Live view of system and bot logs"
+                botId="general"
                 maxEntries={100}
-                autoScroll={true}
+                pollInterval={30000}
                 canClear={isAdmin}
                 canExport={true}
-                onClear={handleClearLogs}
               />
             </div>
           </TabsContent>

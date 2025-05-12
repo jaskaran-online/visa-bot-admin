@@ -67,6 +67,10 @@ export async function restartBot(botId: string): Promise<GenericResponse> {
 
 export async function getBotLogs(botId: string, limit = 15): Promise<LogEntry[]> {
   try {
+    // Handle special case for general logs
+    if (botId === "general") {
+      return await apiClient.getAllLogs(limit);
+    }
     return await apiClient.getBotLogs(botId, limit);
   } catch (error) {
     console.error(`Get bot logs error for ID ${botId}:`, error);
