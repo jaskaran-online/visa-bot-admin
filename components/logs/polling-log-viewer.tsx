@@ -215,7 +215,7 @@ export function PollingLogViewer({
             logs.map((log, index) => (
               <div key={index} className="flex items-start gap-2 p-2 border rounded-md">
                 <div className="text-xs text-muted-foreground whitespace-nowrap">
-                  {new Date(log.timestamp).toLocaleTimeString()}
+                  {log?.time_ago}
                 </div>
                 <Badge variant={getBadgeVariant(log.type)} className="whitespace-nowrap">
                   {log.type.toUpperCase()}

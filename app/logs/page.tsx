@@ -66,7 +66,7 @@ export default function LogsPage() {
 
   useEffect(() => {
     if (activeTab !== "realtime") {
-      fetchLogs()
+      // fetchLogs()
     }
   }, [activeTab, toast])
 
