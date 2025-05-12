@@ -237,10 +237,12 @@ export function BotLogs({ botId, isAdmin }: BotLogsProps) {
           </div>
         ) : filteredLogs.length > 0 ? (
           <div className="space-y-4">
-            {filteredLogs.map((log, index) => (
+            {(filteredLogs?.reverse() || []).map((log, index) => (
               <div key={index} className="flex items-start gap-4 p-4 border rounded-md">
                 <div className="min-w-[100px] text-xs text-muted-foreground">
-                  {formatDistanceToNow(new Date(log.timestamp), { addSuffix: true })}
+                  {/* {JSON.stringify(log)} */}
+                  {log?.time_ago}
+                  {/* {formatDistanceToNow(new Date(log.timestamp), { addSuffix: true })} */}
                 </div>
                 <div>{getTypeBadge(log.type)}</div>
                 <div className="flex-1">
