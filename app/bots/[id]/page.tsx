@@ -12,6 +12,7 @@ import { BotConfiguration } from "@/components/bots/bot-configuration"
 import { hasPermission } from "@/lib/auth"
 import { useToast } from "@/hooks/use-toast"
 import { apiClient, type BotResponse, type BotStatus } from "@/lib/api-client"
+import { getBot, startBot, stopBot, restartBot, deleteBot } from "@/lib/api/bots"
 import { ArrowLeft, Play, Square, RefreshCw, Trash2, AlertCircle, Clock, CheckCircle } from "lucide-react"
 import {
   AlertDialog,
@@ -34,22 +35,22 @@ export default function BotDetailPage({ params }: { params: { id: string } }) {
   const { toast } = useToast()
   const isAdmin = hasPermission("admin")
 
-  useEffect(() => {
-    const fetchBot = async () => {
-      try {
-        const data = await apiClient.getBot(params.id)
-        setBot(data)
-      } catch (error) {
-        toast({
-          title: "Error fetching bot details",
-          description: error instanceof Error ? error.message : "Failed to load bot details. Please try again.",
-          variant: "destructive",
-        })
-      } finally {
-        setIsLoading(false)
-      }
+  const fetchBot = async () => {
+    try {
+      const data = await getBot(params.id)
+      setBot(data)
+    } catch (error) {
+      toast({
+        title: "Error fetching bot details",
+        description: error instanceof Error ? error.message : "Failed to load bot details. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
     }
+  }
 
+  useEffect(() => {
     fetchBot()
   }, [params.id, toast])
 
@@ -61,13 +62,13 @@ export default function BotDetailPage({ params }: { params: { id: string } }) {
 
       switch (action) {
         case "start":
-          response = await apiClient.startBot(bot.id)
+          response = await startBot(bot.id)
           break
         case "stop":
-          response = await apiClient.stopBot(bot.id)
+          response = await stopBot(bot.id)
           break
         case "restart":
-          response = await apiClient.restartBot(bot.id)
+          response = await restartBot(bot.id)
           break
         default:
           throw new Error(`Unknown action: ${action}`)
@@ -78,21 +79,8 @@ export default function BotDetailPage({ params }: { params: { id: string } }) {
         description: response.message,
       })
 
-      // Update local state to reflect the action
-      let newStatus: BotStatus = bot.status
-      switch (action) {
-        case "start":
-          newStatus = "running"
-          break
-        case "stop":
-          newStatus = "stopped"
-          break
-        case "restart":
-          newStatus = "running"
-          break
-      }
-
-      setBot({ ...bot, status: newStatus })
+      // Refresh bot data to get the updated status
+      fetchBot()
     } catch (error) {
       toast({
         title: `Failed to ${action} bot`,
@@ -106,7 +94,7 @@ export default function BotDetailPage({ params }: { params: { id: string } }) {
     if (!bot) return
 
     try {
-      const response = await apiClient.deleteBot(bot.id)
+      const response = await deleteBot(bot.id)
 
       toast({
         title: "Bot deleted",

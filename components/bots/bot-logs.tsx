@@ -21,7 +21,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { apiClient, type LogEntry } from "@/lib/api-client"
+import { type LogEntry } from "@/lib/api-client"
+import { getBotLogs, clearBotLogs } from "@/lib/api/bots"
 
 interface BotLogsProps {
   botId: string
@@ -39,7 +40,7 @@ export function BotLogs({ botId, isAdmin }: BotLogsProps) {
 
   const fetchLogs = async () => {
     try {
-      const data = await apiClient.getBotLogs(botId)
+      const data = await getBotLogs(botId)
       setLogs(data)
       setFilteredLogs(data)
     } catch (error) {
@@ -81,7 +82,7 @@ export function BotLogs({ botId, isAdmin }: BotLogsProps) {
 
   const handleClearLogs = async () => {
     try {
-      const response = await apiClient.clearBotLogs(botId)
+      const response = await clearBotLogs(botId)
 
       setLogs([])
       setFilteredLogs([])

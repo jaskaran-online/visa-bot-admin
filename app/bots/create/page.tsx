@@ -16,6 +16,7 @@ import { z } from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { apiClient, type BotConfig } from "@/lib/api-client"
+import { createBot } from "@/lib/api/bots"
 
 // Define the form schema with Zod
 const botFormSchema = z.object({
@@ -79,7 +80,7 @@ export default function CreateBotPage() {
       }
 
       // Create the bot
-      const response = await apiClient.createBot(botConfig)
+      const response = await createBot(botConfig)
 
       toast({
         title: "Bot created successfully",
