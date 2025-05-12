@@ -41,8 +41,8 @@ export function BotLogs({ botId, isAdmin }: BotLogsProps) {
   const fetchLogs = async () => {
     try {
       const data = await getBotLogs(botId)
-      setLogs(data)
-      setFilteredLogs(data)
+      setLogs(data.reverse())
+      setFilteredLogs(data.reverse())
     } catch (error) {
       toast({
         title: "Error fetching logs",

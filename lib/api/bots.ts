@@ -65,7 +65,7 @@ export async function restartBot(botId: string): Promise<GenericResponse> {
   }
 }
 
-export async function getBotLogs(botId: string, limit = 100): Promise<LogEntry[]> {
+export async function getBotLogs(botId: string, limit = 15): Promise<LogEntry[]> {
   try {
     return await apiClient.getBotLogs(botId, limit);
   } catch (error) {
