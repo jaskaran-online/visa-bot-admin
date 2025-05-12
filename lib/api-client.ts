@@ -199,6 +199,20 @@ class ApiClient {
 
   constructor() {
     // Initialize with default server if available
+    if (typeof window !== "undefined" && process.env.NEXT_PUBLIC_AUTOMATION_API_URL) {
+      // Add the environment API URL as a server
+      const envServer: ServerConfig = {
+        id: "default-env",
+        name: "API Server",
+        baseUrl: process.env.NEXT_PUBLIC_AUTOMATION_API_URL,
+        isActive: true,
+      }
+      
+      this.servers = [envServer]
+      this.activeServerId = envServer.id
+      this.baseUrl = envServer.baseUrl
+    }
+    
     this.loadServers()
     this.loadCountriesData()
     this.loadFacilitiesData()
@@ -436,473 +450,136 @@ class ApiClient {
   }
 
   // Generic request method
-  private async request<T>(endpoint: string, method = "GET", data?: any): Promise<T> {
+  private async request<T>(endpoint: string, method = "GET", data?: any, responseType = "json"): Promise<T> {
     if (!this.baseUrl) {
       throw new Error("No active server configured")
     }
 
-    const token = localStorage.getItem("token")
+    // Use API key from environment if available
+    const apiKey = process.env.NEXT_PUBLIC_API_KEY || localStorage.getItem("api_key")
     const headers: HeadersInit = {
       "Content-Type": "application/json",
     }
 
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`
+    if (apiKey) {
+      headers["x-api-key"] = apiKey
     }
 
     const config: RequestInit = {
       method,
       headers,
+      cache: "no-store", // Ensure we always get fresh data
     }
 
     if (data) {
       config.body = JSON.stringify(data)
     }
 
-    const response = await fetch(`${this.baseUrl}${endpoint}`, config)
+    try {
+      const response = await fetch(`${this.baseUrl}${endpoint}`, config)
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.message || `API request failed with status ${response.status}`)
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || errorData.message || `API request failed with status ${response.status}`)
+      }
+
+      if (responseType === "blob") {
+        return response.blob() as Promise<T>
+      } else if (responseType === "text") {
+        return response.text() as Promise<T>
+      } else {
+        return response.json() as Promise<T>
+      }
+    } catch (error) {
+      console.error(`API request error: ${endpoint}`, error)
+      throw error
     }
-
-    return response.json()
   }
 
   // Bot Management API Methods
   public async getAllBots(): Promise<BotList> {
-    // For demo purposes, return mock data
-    return {
-      bots: [
-        {
-          id: "bot1",
-          config: {
-            EMAIL: "user1@example.com",
-            PASSWORD: "password123",
-            COUNTRY: "gb",
-            FACILITY_ID: "94",
-            ASC_FACILITY_ID: "94",
-            MIN_DATE: "2023-06-01",
-            MAX_DATE: "2023-12-31",
-          },
-          status: "running",
-          start_time: "2023-05-01T12:00:00Z",
-          logs: [
-            {
-              message: "Bot started successfully",
-              type: "info",
-              timestamp: new Date(Date.now() - 5 * 60000).toISOString(),
-            },
-            {
-              message: "Logging in to appointment system",
-              type: "info",
-              timestamp: new Date(Date.now() - 4 * 60000).toISOString(),
-            },
-          ],
-        },
-        {
-          id: "bot2",
-          config: {
-            EMAIL: "user2@example.com",
-            PASSWORD: "password456",
-            COUNTRY: "fr",
-            FACILITY_ID: "92",
-            MIN_DATE: "2023-07-01",
-            MAX_DATE: "2023-11-30",
-          },
-          status: "stopped",
-          start_time: "2023-05-02T14:30:00Z",
-          logs: [],
-        },
-        {
-          id: "bot3",
-          config: {
-            EMAIL: "user3@example.com",
-            PASSWORD: "password789",
-            COUNTRY: "es",
-            FACILITY_ID: "93",
-            MIN_DATE: "2023-08-01",
-            MAX_DATE: "2023-10-31",
-          },
-          status: "error",
-          start_time: "2023-05-03T09:15:00Z",
-          logs: [
-            {
-              message: "Failed to connect to appointment system: Connection timeout",
-              type: "error",
-              timestamp: new Date(Date.now() - 30000).toISOString(),
-            },
-          ],
-        },
-      ],
-    }
-    // In a real app, you would use:
-    // return this.request<BotList>("/bots");
+    return this.request<BotList>("/bots")
   }
 
   public async getBot(botId: string): Promise<BotResponse> {
-    // For demo purposes, return mock data
-    const mockBots = {
-      bot1: {
-        id: "bot1",
-        config: {
-          EMAIL: "user1@example.com",
-          PASSWORD: "password123",
-          COUNTRY: "gb",
-          FACILITY_ID: "94",
-          ASC_FACILITY_ID: "94",
-          MIN_DATE: "2023-06-01",
-          MAX_DATE: "2023-12-31",
-        },
-        status: "running",
-        start_time: "2023-05-01T12:00:00Z",
-        logs: [
-          {
-            message: "Bot started successfully",
-            type: "info",
-            timestamp: new Date(Date.now() - 5 * 60000).toISOString(),
-          },
-          {
-            message: "Logging in to appointment system",
-            type: "info",
-            timestamp: new Date(Date.now() - 4 * 60000).toISOString(),
-          },
-        ],
-      },
-      bot2: {
-        id: "bot2",
-        config: {
-          EMAIL: "user2@example.com",
-          PASSWORD: "password456",
-          COUNTRY: "fr",
-          FACILITY_ID: "92",
-          MIN_DATE: "2023-07-01",
-          MAX_DATE: "2023-11-30",
-        },
-        status: "stopped",
-        start_time: "2023-05-02T14:30:00Z",
-        logs: [],
-      },
-      bot3: {
-        id: "bot3",
-        config: {
-          EMAIL: "user3@example.com",
-          PASSWORD: "password789",
-          COUNTRY: "es",
-          FACILITY_ID: "93",
-          MIN_DATE: "2023-08-01",
-          MAX_DATE: "2023-10-31",
-        },
-        status: "error",
-        start_time: "2023-05-03T09:15:00Z",
-        logs: [
-          {
-            message: "Failed to connect to appointment system: Connection timeout",
-            type: "error",
-            timestamp: new Date(Date.now() - 30000).toISOString(),
-          },
-        ],
-      },
-    }
-
-    if (botId in mockBots) {
-      return mockBots[botId as keyof typeof mockBots]
-    }
-
-    throw new Error("Bot not found")
-    // In a real app, you would use:
-    // return this.request<BotResponse>(`/bots/${botId}`);
+    return this.request<BotResponse>(`/bots/${botId}`)
   }
 
   public async createBot(config: BotConfig): Promise<BotResponse> {
-    // For demo purposes, return mock data
-    return {
-      id: "new-bot-" + Date.now(),
-      config,
-      status: "stopped",
-      start_time: new Date().toISOString(),
-      logs: [],
-    }
-    // In a real app, you would use:
-    // return this.request<BotResponse>("/bots", "POST", { config });
+    return this.request<BotResponse>("/bots", "POST", { config })
   }
 
   public async deleteBot(botId: string): Promise<GenericResponse> {
-    // For demo purposes, return mock data
-    return {
-      success: true,
-      message: `Bot ${botId} deleted successfully`,
-    }
-    // In a real app, you would use:
-    // return this.request<GenericResponse>(`/bots/${botId}`, "DELETE");
+    return this.request<GenericResponse>(`/bots/${botId}`, "DELETE")
   }
 
   public async startBot(botId: string): Promise<GenericResponse> {
-    // For demo purposes, return mock data
-    return {
-      success: true,
-      message: `Bot ${botId} started successfully`,
-    }
-    // In a real app, you would use:
-    // return this.request<GenericResponse>(`/bots/${botId}/start`, "POST");
+    return this.request<GenericResponse>(`/bots/${botId}/start`, "POST")
   }
 
   public async stopBot(botId: string): Promise<GenericResponse> {
-    // For demo purposes, return mock data
-    return {
-      success: true,
-      message: `Bot ${botId} stopped successfully`,
-    }
-    // In a real app, you would use:
-    // return this.request<GenericResponse>(`/bots/${botId}/stop`, "POST");
+    return this.request<GenericResponse>(`/bots/${botId}/stop`, "POST")
   }
 
   public async restartBot(botId: string): Promise<GenericResponse> {
-    // For demo purposes, return mock data
-    return {
-      success: true,
-      message: `Bot ${botId} restarted successfully`,
-    }
-    // In a real app, you would use:
-    // return this.request<GenericResponse>(`/bots/${botId}/restart`, "POST");
+    return this.request<GenericResponse>(`/bots/${botId}/restart`, "POST")
   }
 
   public async getBotLogs(botId: string, limit = 100): Promise<LogEntry[]> {
-    // For demo purposes, return mock data
-    const mockLogs: Record<string, LogEntry[]> = {
-      bot1: [
-        {
-          message: "Bot started successfully",
-          type: "info",
-          timestamp: new Date(Date.now() - 5 * 60000).toISOString(),
-        },
-        {
-          message: "Logging in to appointment system",
-          type: "info",
-          timestamp: new Date(Date.now() - 4 * 60000).toISOString(),
-        },
-        {
-          message: "Login successful",
-          type: "info",
-          timestamp: new Date(Date.now() - 3 * 60000).toISOString(),
-        },
-        {
-          message: "Searching for available appointments",
-          type: "info",
-          timestamp: new Date(Date.now() - 2 * 60000).toISOString(),
-        },
-        {
-          message: "Found appointment on 2023-06-15",
-          type: "info",
-          timestamp: new Date(Date.now() - 1 * 60000).toISOString(),
-        },
-      ],
-      bot2: [
-        {
-          message: "Bot started successfully",
-          type: "info",
-          timestamp: new Date(Date.now() - 30 * 60000).toISOString(),
-        },
-        {
-          message: "Logging in to appointment system",
-          type: "info",
-          timestamp: new Date(Date.now() - 29 * 60000).toISOString(),
-        },
-        {
-          message: "Login successful",
-          type: "info",
-          timestamp: new Date(Date.now() - 28 * 60000).toISOString(),
-        },
-        {
-          message: "No available appointments found",
-          type: "warning",
-          timestamp: new Date(Date.now() - 27 * 60000).toISOString(),
-        },
-        {
-          message: "Bot stopped by user",
-          type: "info",
-          timestamp: new Date(Date.now() - 26 * 60000).toISOString(),
-        },
-      ],
-      bot3: [
-        {
-          message: "Bot started successfully",
-          type: "info",
-          timestamp: new Date(Date.now() - 10 * 60000).toISOString(),
-        },
-        {
-          message: "Logging in to appointment system",
-          type: "info",
-          timestamp: new Date(Date.now() - 9 * 60000).toISOString(),
-        },
-        {
-          message: "Login failed: Invalid credentials",
-          type: "error",
-          timestamp: new Date(Date.now() - 8 * 60000).toISOString(),
-        },
-        {
-          message: "Retrying login...",
-          type: "info",
-          timestamp: new Date(Date.now() - 7 * 60000).toISOString(),
-        },
-        {
-          message: "Login failed: Invalid credentials",
-          type: "error",
-          timestamp: new Date(Date.now() - 6 * 60000).toISOString(),
-        },
-        {
-          message: "Bot stopped due to error",
-          type: "error",
-          timestamp: new Date(Date.now() - 5 * 60000).toISOString(),
-        },
-      ],
-    }
-
-    if (botId in mockLogs) {
-      return mockLogs[botId].slice(0, limit)
-    }
-
-    return []
-    // In a real app, you would use:
-    // return this.request<LogEntry[]>(`/bots/${botId}/logs?limit=${limit}`);
+    return this.request<LogEntry[]>(`/bots/${botId}/logs?limit=${limit}`)
   }
 
   public async clearBotLogs(botId: string): Promise<GenericResponse> {
-    // For demo purposes, return mock data
-    return {
-      success: true,
-      message: `Logs for bot ${botId} cleared successfully`,
-    }
-    // In a real app, you would use:
-    // return this.request<GenericResponse>(`/bots/${botId}/logs/clear`, "POST");
+    return this.request<GenericResponse>(`/bots/${botId}/logs/clear`, "POST")
   }
 
   // Appointment Management API Methods
-  public async getAllAppointments(page = 1, pageSize = 10): Promise<AppointmentList> {
-    // For demo purposes, return mock data
-    return {
-      appointments: [
-        {
-          id: "appt1",
-          bot_id: "bot1",
-          email: "user1@example.com",
-          country: "gb",
-          facility_id: "94",
-          facility_name: "London Embassy",
-          appointment_date: "2025-05-15",
-          appointment_time: "10:30 AM",
-          booked_at: "2023-05-01T12:30:00Z",
-          status: "pending",
-        },
-        {
-          id: "appt2",
-          bot_id: "bot2",
-          email: "user2@example.com",
-          country: "fr",
-          facility_id: "92",
-          facility_name: "Paris Embassy",
-          appointment_date: "2025-05-10",
-          appointment_time: "9:00 AM",
-          booked_at: "2023-04-28T14:15:00Z",
-          status: "confirmed",
-        },
-        {
-          id: "appt3",
-          bot_id: "bot3",
-          email: "user3@example.com",
-          country: "de",
-          facility_id: "93",
-          facility_name: "Berlin Consulate",
-          appointment_date: "2025-05-12",
-          appointment_time: "2:15 PM",
-          asc_appointment_date: "2025-05-05",
-          asc_appointment_time: "11:00 AM",
-          booked_at: "2023-04-30T09:45:00Z",
-          visa_type: "B1/B2",
-          notes: "Applicant requested wheelchair access",
-          status: "pending",
-        },
-      ],
-      total_count: 3,
-      page,
-      page_size: pageSize,
+  public async getAllAppointments(
+    page = 1, 
+    pageSize = 10, 
+    filters?: {
+      email?: string;
+      country?: string;
+      facility_id?: string;
+      from_date?: string;
+      to_date?: string;
+      sort_by?: string;
+      sort_order?: string;
     }
-    // In a real app, you would use:
-    // return this.request<AppointmentList>(`/appointments?page=${page}&page_size=${pageSize}`);
+  ): Promise<AppointmentList> {
+    const params = new URLSearchParams();
+    params.append('page', page.toString());
+    params.append('page_size', pageSize.toString());
+    
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) {
+          params.append(key, value);
+        }
+      });
+    }
+    
+    return this.request<AppointmentList>(`/appointments?${params}`);
   }
 
   public async getAppointment(appointmentId: string): Promise<SuccessfulAppointment> {
-    // For demo purposes, return mock data
-    const mockAppointments: Record<string, SuccessfulAppointment> = {
-      appt1: {
-        id: "appt1",
-        bot_id: "bot1",
-        email: "user1@example.com",
-        country: "gb",
-        facility_id: "94",
-        facility_name: "London Embassy",
-        appointment_date: "2025-05-15",
-        appointment_time: "10:30 AM",
-        booked_at: "2023-05-01T12:30:00Z",
-        status: "pending",
-      },
-      appt2: {
-        id: "appt2",
-        bot_id: "bot2",
-        email: "user2@example.com",
-        country: "fr",
-        facility_id: "92",
-        facility_name: "Paris Embassy",
-        appointment_date: "2025-05-10",
-        appointment_time: "9:00 AM",
-        booked_at: "2023-04-28T14:15:00Z",
-        status: "confirmed",
-      },
-      appt3: {
-        id: "appt3",
-        bot_id: "bot3",
-        email: "user3@example.com",
-        country: "de",
-        facility_id: "93",
-        facility_name: "Berlin Consulate",
-        appointment_date: "2025-05-12",
-        appointment_time: "2:15 PM",
-        asc_appointment_date: "2025-05-05",
-        asc_appointment_time: "11:00 AM",
-        booked_at: "2023-04-30T09:45:00Z",
-        visa_type: "B1/B2",
-        notes: "Applicant requested wheelchair access",
-        status: "pending",
-      },
-    }
-
-    if (appointmentId in mockAppointments) {
-      return mockAppointments[appointmentId]
-    }
-
-    throw new Error("Appointment not found")
-    // In a real app, you would use:
-    // return this.request<SuccessfulAppointment>(`/appointments/${appointmentId}`);
+    return this.request<SuccessfulAppointment>(`/appointments/${appointmentId}`);
   }
 
-  public async confirmAppointment(appointmentId: string): Promise<GenericResponse> {
-    // For demo purposes, return mock data
-    return {
-      success: true,
-      message: `Appointment ${appointmentId} confirmed successfully`,
-    }
-    // In a real app, you would use:
-    // return this.request<GenericResponse>(`/appointments/${appointmentId}/confirm`, "POST");
+  public async createAppointment(appointmentData: Partial<SuccessfulAppointment>): Promise<SuccessfulAppointment> {
+    return this.request<SuccessfulAppointment>('/appointments', 'POST', appointmentData);
   }
 
-  public async cancelAppointment(appointmentId: string): Promise<GenericResponse> {
-    // For demo purposes, return mock data
-    return {
-      success: true,
-      message: `Appointment ${appointmentId} cancelled successfully`,
-    }
-    // In a real app, you would use:
-    // return this.request<GenericResponse>(`/appointments/${appointmentId}/cancel`, "POST");
+  public async updateAppointment(appointmentId: string, appointmentData: Partial<SuccessfulAppointment>): Promise<SuccessfulAppointment> {
+    return this.request<SuccessfulAppointment>(`/appointments/${appointmentId}`, 'PUT', appointmentData);
+  }
+
+  public async deleteAppointment(appointmentId: string): Promise<GenericResponse> {
+    return this.request<GenericResponse>(`/appointments/${appointmentId}`, 'DELETE');
+  }
+
+  public async getAppointmentStats(): Promise<any> {
+    return this.request<any>('/appointments/stats');
   }
 
   // Statistics API Methods
@@ -1052,39 +729,14 @@ class ApiClient {
   }
 
   // Add these methods to the ApiClient class
-  public async getAllLogs(): Promise<LogEntryExtended[]> {
-    // For demo purposes, return mock data
-    return [
-      {
-        id: "log1",
-        timestamp: new Date(Date.now() - 5 * 60000).toISOString(),
-        level: "info",
-        message: "System started successfully",
-        source: "system/startup",
-      },
-      {
-        id: "log2",
-        timestamp: new Date(Date.now() - 10 * 60000).toISOString(),
-        level: "info",
-        message: "Bot started successfully",
-        botId: "bot1",
-        botName: "London Bot",
-        source: "bot/lifecycle",
-      },
-      {
-        id: "log3",
-        timestamp: new Date(Date.now() - 15 * 60000).toISOString(),
-        level: "warning",
-        message: "Slow response from appointment system",
-        botId: "bot1",
-        botName: "London Bot",
-        source: "bot/network",
-        context: {
-          responseTime: 5000,
-          endpoint: "/api/appointments",
-          attempt: 2,
-        },
-      },
+  public async getAllLogs(limit = 100): Promise<LogEntryExtended[]> {
+    try {
+      return await this.request<LogEntryExtended[]>(`/logs/stream/general?limit=${limit}`);
+    } catch (error) {
+      console.error("Failed to fetch general logs:", error);
+      return [];
+    }
+  }
       {
         id: "log4",
         timestamp: new Date(Date.now() - 20 * 60000).toISOString(),
@@ -1213,66 +865,78 @@ class ApiClient {
   }
 
   public async getLogById(logId: string): Promise<LogEntryExtended> {
-    // For demo purposes, return mock data
-    const allLogs = await this.getAllLogs()
-    const log = allLogs.find((log) => log.id === logId)
+    // Note: Since there's no specific endpoint for individual logs in the API spec,
+    // we're fetching all logs and filtering client-side
+    try {
+      const allLogs = await this.getAllLogs(500); // Fetch more logs to increase chances of finding the one we want
+      const log = allLogs.find((log) => log.id === logId);
 
-    if (!log) {
-      throw new Error("Log not found")
+      if (!log) {
+        throw new Error("Log not found");
+      }
+
+      return log;
+    } catch (error) {
+      console.error(`Failed to fetch log with ID ${logId}:`, error);
+      throw error;
     }
-
-    return log
-    // In a real app, you would use:
-    // return this.request<LogEntry>(`/logs/${logId}`);
   }
 
   public async clearAllLogs(): Promise<GenericResponse> {
-    // For demo purposes, return mock data
-    return {
-      success: true,
-      message: "All logs cleared successfully",
-    }
-    // In a real app, you would use:
-    // return this.request<GenericResponse>("/logs/clear", "POST");
+    // Note: This endpoint doesn't exist in the API specification
+    // In a real implementation, we might need a custom endpoint for this
+    throw new Error("API endpoint not implemented");
   }
 
   public async exportLogs(format: "json" | "csv" = "json"): Promise<Blob> {
-    // For demo purposes, this would be implemented in a real app
-    // to return a blob for download
-    throw new Error("Not implemented")
-    // In a real app, you would use:
-    // return this.request<Blob>(`/logs/export?format=${format}`, "GET", null, "blob");
+    // Note: This endpoint doesn't exist in the API specification
+    // For a real implementation, we would need a custom endpoint that returns a blob
+    throw new Error("API endpoint not implemented");
   }
 
-  // Add this method to the ApiClient class, before the closing brace of the class
+  // Statistics summary method
   public async getStatisticsSummary(): Promise<StatisticsSummary> {
-    // For demo purposes, return mock data
-    return {
-      appointments: {
-        total: 124,
-        trend: 12,
-        trendDirection: "up",
-      },
-      bots: {
-        active: 8,
-        total: 12,
-        trend: 5,
-        trendDirection: "up",
-      },
-      users: {
-        total: 68,
-        active: 42,
-        trend: 8,
-        trendDirection: "up",
-      },
-      waitTime: {
-        average: 42,
-        trend: 3,
-        trendDirection: "down",
-      },
+    // Since this isn't in the API spec, we'll derive it from other endpoints
+    try {
+      const healthPromise = this.request<any>("/health/detailed");
+      const statsPromise = this.request<any>('/appointments/stats');
+      
+      const [health, stats] = await Promise.all([healthPromise, statsPromise]);
+      
+      // Create a summary based on available data
+      return {
+        appointments: {
+          total: stats.total_appointments || 0,
+          trend: 0, // Would need historical data
+          trendDirection: null,
+        },
+        bots: {
+          active: Object.values(health.bots || {}).filter(status => status === 'running').length,
+          total: Object.keys(health.bots || {}).length,
+          trend: 0, // Would need historical data
+          trendDirection: null,
+        },
+        users: {
+          total: Object.keys(stats.bookings_by_country || {}).reduce((sum, key) => sum + (stats.bookings_by_country[key] || 0), 0),
+          active: 0, // Not available in the API
+          trend: 0, // Would need historical data
+          trendDirection: null,
+        },
+        waitTime: {
+          average: stats.average_wait_days || 0,
+          trend: 0, // Would need historical data
+          trendDirection: null,
+        }
+      };
+    } catch (error) {
+      console.error("Failed to get statistics summary", error);
+      return {
+        appointments: { total: 0, trend: 0, trendDirection: null },
+        bots: { active: 0, total: 0, trend: 0, trendDirection: null },
+        users: { total: 0, active: 0, trend: 0, trendDirection: null },
+        waitTime: { average: 0, trend: 0, trendDirection: null },
+      };
     }
-    // In a real app, you would use:
-    // return this.request<StatisticsSummary>("/statistics/summary");
   }
 }
 
