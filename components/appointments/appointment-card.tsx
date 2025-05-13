@@ -20,9 +20,9 @@ export function AppointmentCard({ appointment, countryName, onViewDetails }: App
   return (
     <Card>
       <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-medium">{appointment.email}</CardTitle>
-          <Badge variant={isUpcoming ? "default" : "outline"}>{isUpcoming ? "Upcoming" : "Past"}</Badge>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+          <CardTitle className="text-md font-medium">{appointment.email}</CardTitle>
+          <Badge className="w-fit" variant={isUpcoming ? "default" : "outline"}>{isUpcoming ? "Upcoming" : "Past"}</Badge>
         </div>
       </CardHeader>
       <CardContent className="pb-2">
