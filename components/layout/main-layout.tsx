@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast"
 
 export function MainLayout({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<{ name: string; email: string; role: string } | null>(null)
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
   const { toast } = useToast()
