@@ -7,13 +7,21 @@ import { useRouter, usePathname } from "next/navigation"
 import { Sidebar } from "./sidebar"
 import { Header } from "./header"
 import { useToast } from "@/hooks/use-toast"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 export function MainLayout({ children }: { children: React.ReactNode }) {
+  const isMobile = useIsMobile()
+
+  console.log("isMobile", isMobile)
   const [user, setUser] = useState<{ name: string; email: string; role: string } | null>(null)
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(!isMobile)
   const router = useRouter()
   const pathname = usePathname()
   const { toast } = useToast()
+
+  useEffect(() => {
+    setIsSidebarOpen(!isMobile)
+  }, [isMobile])
 
   useEffect(() => {
     // Check if user is logged in

@@ -171,12 +171,12 @@ export function PollingLogViewer({
   return (
     <Card className="h-full flex flex-col">
       <CardHeader>
-        <div className="flex flex-row items-center justify-between">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <CardTitle>{title}</CardTitle>
             {description && <CardDescription>{description}</CardDescription>}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             <Button
               variant={isPolling ? "default" : "outline"}
               size="sm"
