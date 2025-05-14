@@ -137,11 +137,11 @@ export default function LoginPage() {
           </form>
         </CardContent>
         <CardFooter className="text-center text-sm text-muted-foreground">
-          <div className="w-full">
+          {/* <div className="w-full">
             <p>Demo credentials:</p>
             <p>Admin: admin@example.com / admin123</p>
             <p>Viewer: viewer@example.com / viewer123</p>
-          </div>
+          </div> */}
         </CardFooter>
       </Card>
     </div>

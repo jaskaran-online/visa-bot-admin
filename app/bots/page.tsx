@@ -1,13 +1,14 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { MainLayout } from "@/components/layout/main-layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Search, Filter, RefreshCw } from "lucide-react"
+import { Plus, Search, RefreshCw } from "lucide-react"
 import { BotCard } from "@/components/bots/bot-card"
+import { BotTable } from "@/components/bots/bot-table"
+import { BotFilters } from "@/components/bots/bot-filters"
 import { apiClient, type BotResponse } from "@/lib/api-client"
 import { getAllBots, startBot, stopBot, restartBot, deleteBot } from "@/lib/api/bots"
 import { hasPermission } from "@/lib/auth"
@@ -20,13 +21,20 @@ export default function BotsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
+  const [countryFilter, setCountryFilter] = useState("all")
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [viewType, setViewType] = useState<"card" | "table">("card")
+  const [groupByEmail, setGroupByEmail] = useState(false)
+  const [sortField, setSortField] = useState("start_time")
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
+  
   const router = useRouter()
   const { toast } = useToast()
   const isAdmin = hasPermission("admin")
 
   const fetchBots = async () => {
     try {
+      setIsRefreshing(true)
       const data = await getAllBots()
       setBots(data.bots)
       setFilteredBots(data.bots)
@@ -46,12 +54,18 @@ export default function BotsPage() {
     fetchBots()
   }, [toast])
 
+  // For client-side filtering of already fetched bots
   useEffect(() => {
     let result = [...bots]
 
     // Apply status filter
     if (statusFilter !== "all") {
       result = result.filter((bot) => bot.status === statusFilter)
+    }
+
+    // Apply country filter
+    if (countryFilter !== "all") {
+      result = result.filter((bot) => bot.config.COUNTRY === countryFilter)
     }
 
     // Apply search filter
@@ -66,16 +80,10 @@ export default function BotsPage() {
     }
 
     setFilteredBots(result)
-  }, [bots, statusFilter, searchQuery])
+  }, [bots, statusFilter, countryFilter, searchQuery])
 
   const handleCreateBot = () => {
-    // Use direct navigation to ensure it works
     window.location.href = "/bots/create"
-    // Alternatively, we could use router.push with a callback to confirm navigation
-    // router.push("/bots/create").catch(error => {
-    //   console.error("Navigation failed:", error);
-    //   window.location.href = "/bots/create";
-    // });
   }
 
   const handleRefresh = () => {
@@ -137,10 +145,71 @@ export default function BotsPage() {
     }
   }
 
+  const handleStatusFilterChange = (status: string) => {
+    setStatusFilter(status);
+  }
+
+  const handleCountryFilterChange = (country: string) => {
+    setCountryFilter(country);
+  }
+
+  const handleViewChange = (view: "card" | "table") => {
+    setViewType(view);
+  }
+
+  const handleGroupByEmailChange = (groupBy: boolean) => {
+    setGroupByEmail(groupBy);
+  }
+
+  const handleSortChange = (field: string, direction: "asc" | "desc") => {
+    setSortField(field);
+    setSortDirection(direction);
+  }
+
+  // Sort bots client-side according to current sort settings
+  const sortedBots = useMemo(() => {
+    return [...filteredBots].sort((a, b) => {
+      let aValue, bValue;
+      
+      // Extract the values to compare based on sortField
+      switch (sortField) {
+        case 'start_time':
+          aValue = new Date(a.start_time).getTime();
+          bValue = new Date(b.start_time).getTime();
+          break;
+        case 'config.EMAIL':
+          aValue = a.config.EMAIL.toLowerCase();
+          bValue = b.config.EMAIL.toLowerCase();
+          break;
+        case 'config.COUNTRY':
+          aValue = apiClient.getCountryName(a.config.COUNTRY).toLowerCase();
+          bValue = apiClient.getCountryName(b.config.COUNTRY).toLowerCase();
+          break;
+        case 'config.FACILITY_ID':
+          // Handle null or undefined facility IDs
+          aValue = a.config.FACILITY_ID ? apiClient.getFacilityName(a.config.FACILITY_ID).toLowerCase() : 'zzz';
+          bValue = b.config.FACILITY_ID ? apiClient.getFacilityName(b.config.FACILITY_ID).toLowerCase() : 'zzz';
+          break;
+        case 'status':
+          aValue = a.status.toLowerCase();
+          bValue = b.status.toLowerCase();
+          break;
+        default:
+          aValue = new Date(a.start_time).getTime();
+          bValue = new Date(b.start_time).getTime();
+      }
+      
+      // Apply sort direction
+      return sortDirection === 'asc' 
+        ? (aValue > bValue ? 1 : -1)
+        : (aValue < bValue ? 1 : -1);
+    });
+  }, [filteredBots, sortField, sortDirection]);
+
   return (
     <MainLayout>
       <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Bots</h1>
             <p className="text-muted-foreground">Manage your visa appointment bots</p>
@@ -148,19 +217,19 @@ export default function BotsPage() {
           <div className="flex gap-2">
             <Button variant="outline" onClick={handleRefresh} disabled={isRefreshing}>
               <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-              Refresh
+              <span className="hidden sm:inline">Refresh</span>
             </Button>
             {isAdmin && (
               <Button onClick={handleCreateBot} data-testid="create-bot-button">
                 <Plus className="mr-2 h-4 w-4" />
-                Create Bot
+                <span className="hidden sm:inline">Create Bot</span>
               </Button>
             )}
           </div>
         </div>
 
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="relative w-full sm:max-w-xs">
+        <div className="flex flex-col gap-4">
+          <div className="relative w-full">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
@@ -170,76 +239,101 @@ export default function BotsPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                <SelectItem value="running">Running</SelectItem>
-                <SelectItem value="stopped">Stopped</SelectItem>
-                <SelectItem value="error">Error</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
 
-        {isLoading ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="rounded-lg border bg-card text-card-foreground shadow-sm">
-                <div className="p-6 space-y-4">
-                  <Skeleton className="h-6 w-3/4" />
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-2/3" />
-                  </div>
-                  <div className="flex justify-between">
-                    <Skeleton className="h-10 w-20" />
-                    <Skeleton className="h-10 w-20" />
+          <BotFilters
+            onStatusFilterChange={handleStatusFilterChange}
+            onCountryFilterChange={handleCountryFilterChange}
+            onViewChange={handleViewChange}
+            onSortChange={handleSortChange}
+            onGroupByEmailChange={handleGroupByEmailChange}
+            viewType={viewType}
+            groupByEmail={groupByEmail}
+            statusFilter={statusFilter}
+            countryFilter={countryFilter}
+            sortField={sortField}
+            sortDirection={sortDirection}
+          />
+
+          {isLoading ? (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="rounded-lg border bg-card text-card-foreground shadow-sm">
+                  <div className="p-6 space-y-4">
+                    <Skeleton className="h-6 w-3/4" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-2/3" />
+                    </div>
+                    <div className="flex justify-between">
+                      <Skeleton className="h-10 w-20" />
+                      <Skeleton className="h-10 w-20" />
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        ) : filteredBots.length > 0 ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {filteredBots.map((bot) => (
-              <BotCard
-                key={bot.id}
-                bot={bot}
-                countryName={apiClient.getCountryName(bot.config.COUNTRY)}
-                facilityName={
-                  bot.config.FACILITY_ID ? apiClient.getFacilityName(bot.config.FACILITY_ID) : "Not specified"
-                }
-                isAdmin={isAdmin}
-                onAction={(action) => handleBotAction(bot.id, action)}
-                onDelete={() => handleDeleteBot(bot.id)}
-                onViewDetails={() => router.push(`/bots/${bot.id}`)}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
-            <div className="mx-auto flex max-w-[420px] flex-col items-center justify-center text-center">
-              <h3 className="mt-4 text-lg font-semibold">No bots found</h3>
-              <p className="mb-4 mt-2 text-sm text-muted-foreground">
-                {searchQuery || statusFilter !== "all"
-                  ? "Try adjusting your search or filter to find what you're looking for."
-                  : "Get started by creating your first bot."}
-              </p>
-              {isAdmin && (
-                <Button onClick={handleCreateBot}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create Bot
-                </Button>
-              )}
+              ))}
             </div>
-          </div>
-        )}
+          ) : sortedBots.length > 0 ? (
+            <>
+              {viewType === "card" ? (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {sortedBots.map((bot) => (
+                    <BotCard
+                      key={bot.id}
+                      bot={bot}
+                      countryName={apiClient.getCountryName(bot.config.COUNTRY)}
+                      facilityName={
+                        bot.config.FACILITY_ID ? apiClient.getFacilityName(bot.config.FACILITY_ID) : "Not specified"
+                      }
+                      isAdmin={isAdmin}
+                      onAction={(action) => handleBotAction(bot.id, action)}
+                      onDelete={() => handleDeleteBot(bot.id)}
+                      onViewDetails={() => router.push(`/bots/${bot.id}`)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <BotTable
+                  bots={sortedBots}
+                  countryNameMap={(code) => apiClient.getCountryName(code)}
+                  facilityNameMap={(id) => id ? apiClient.getFacilityName(id) : "Not specified"}
+                  groupByEmail={groupByEmail}
+                  sortBy={sortField}
+                  sortDirection={sortDirection}
+                  isAdmin={isAdmin}
+                  onViewDetails={(id) => router.push(`/bots/${id}`)}
+                  onAction={handleBotAction}
+                  onDelete={handleDeleteBot}
+                  onSortChange={(field) => {
+                    // Toggle sort direction if same field is clicked
+                    if (field === sortField) {
+                      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+                    } else {
+                      setSortField(field);
+                      setSortDirection("desc"); // Default to desc for new fields
+                    }
+                  }}
+                />
+              )}
+            </>
+          ) : (
+            <div className="flex flex-col items-center justify-center rounded-lg border border-dashed p-8 text-center">
+              <div className="mx-auto flex max-w-[420px] flex-col items-center justify-center text-center">
+                <h3 className="mt-4 text-lg font-semibold">No bots found</h3>
+                <p className="mb-4 mt-2 text-sm text-muted-foreground">
+                  {searchQuery || statusFilter !== "all" || countryFilter !== "all"
+                    ? "Try adjusting your search or filter to find what you're looking for."
+                    : "Get started by creating your first bot."}
+                </p>
+                {isAdmin && (
+                  <Button onClick={handleCreateBot}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create Bot
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </MainLayout>
   )
