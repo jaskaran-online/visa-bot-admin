@@ -1,12 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { MainLayout } from "@/components/layout/main-layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Calendar, Search, RefreshCw, Download } from "lucide-react"
 import { AppointmentCard } from "@/components/appointments/appointment-card"
+import { AppointmentTable } from "@/components/appointments/appointment-table"
 import { AppointmentFilters } from "@/components/appointments/appointment-filters"
 import { apiClient, type SuccessfulAppointment } from "@/lib/api-client"
 import { getAllAppointments } from "@/lib/api/appointments"
@@ -24,6 +25,11 @@ export default function AppointmentsPage() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [viewType, setViewType] = useState<"card" | "table">("card")
+  const [groupByEmail, setGroupByEmail] = useState(false)
+  const [sortField, setSortField] = useState("appointment_date")
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
+  
   const router = useRouter()
   const { toast } = useToast()
 
@@ -43,8 +49,12 @@ export default function AppointmentsPage() {
         filters.to_date = format(dateFilter[1], "yyyy-MM-dd");
       }
       
+      // Add sort options to filters
+      filters.sort_by = sortField;
+      filters.sort_order = sortDirection;
+      
       // Use the API handler to fetch appointments with filters
-      const data = await getAllAppointments(page, 20, filters);
+      const data = await getAllAppointments(page, 50, filters); // Increased page size
       setAppointments(data.appointments)
       setFilteredAppointments(data.appointments)
       setTotalPages(Math.ceil(data.total_count / data.page_size))
@@ -62,7 +72,7 @@ export default function AppointmentsPage() {
 
   useEffect(() => {
     fetchAppointments()
-  }, [page, toast])
+  }, [page, sortField, sortDirection, toast])
 
   useEffect(() => {
     // When filter changes, reset to page 1 and fetch with new filters
@@ -96,7 +106,7 @@ export default function AppointmentsPage() {
   const handleExport = () => {
     try {
       // Create a CSV string
-      let csv = "Email,Country,Facility,Appointment Date,Appointment Time,Booked At\n"
+      let csv = "Email,Country,Facility,Appointment Date,Appointment Time,Status,Booked At\n"
 
       filteredAppointments.forEach((appointment) => {
         csv += `"${appointment.email}",`
@@ -104,6 +114,7 @@ export default function AppointmentsPage() {
         csv += `"${appointment.facility_name}",`
         csv += `"${format(new Date(appointment.appointment_date), "yyyy-MM-dd")}",`
         csv += `"${appointment.appointment_time}",`
+        csv += `"${appointment.status}",`
         csv += `"${format(new Date(appointment.booked_at), "yyyy-MM-dd HH:mm:ss")}"\n`
       })
 
@@ -142,10 +153,66 @@ export default function AppointmentsPage() {
     setDateFilter(dateRange)
   }
 
+  const handleSortChange = (field: string, direction: "asc" | "desc") => {
+    setSortField(field)
+    setSortDirection(direction)
+  }
+
+  const handleViewChange = (view: "card" | "table") => {
+    setViewType(view)
+  }
+
+  const handleGroupByEmailChange = (groupByEmail: boolean) => {
+    setGroupByEmail(groupByEmail)
+  }
+
+  // Sort appointments client-side according to current sort settings
+  const sortedAppointments = useMemo(() => {
+    return [...filteredAppointments].sort((a, b) => {
+      let aValue, bValue;
+      
+      // Extract the values to compare based on sortField
+      switch (sortField) {
+        case 'appointment_date':
+          aValue = new Date(a.appointment_date).getTime();
+          bValue = new Date(b.appointment_date).getTime();
+          break;
+        case 'booked_at':
+          aValue = new Date(a.booked_at).getTime();
+          bValue = new Date(b.booked_at).getTime();
+          break;
+        case 'email':
+          aValue = a.email.toLowerCase();
+          bValue = b.email.toLowerCase();
+          break;
+        case 'country':
+          aValue = apiClient.getCountryName(a.country).toLowerCase();
+          bValue = apiClient.getCountryName(b.country).toLowerCase();
+          break;
+        case 'facility_name':
+          aValue = a.facility_name.toLowerCase();
+          bValue = b.facility_name.toLowerCase();
+          break;
+        case 'status':
+          aValue = a.status.toLowerCase();
+          bValue = b.status.toLowerCase();
+          break;
+        default:
+          aValue = new Date(a.appointment_date).getTime();
+          bValue = new Date(b.appointment_date).getTime();
+      }
+      
+      // Apply sort direction
+      return sortDirection === 'asc' 
+        ? (aValue > bValue ? 1 : -1)
+        : (aValue < bValue ? 1 : -1);
+    });
+  }, [filteredAppointments, sortField, sortDirection]);
+
   return (
     <MainLayout>
       <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Appointments</h1>
             <p className="text-muted-foreground">Manage visa appointments found by your bots</p>
@@ -153,18 +220,18 @@ export default function AppointmentsPage() {
           <div className="flex gap-2">
             <Button variant="outline" onClick={handleRefresh} disabled={isRefreshing}>
               <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-              Refresh
+              <span className="hidden sm:inline">Refresh</span>
             </Button>
             <Button variant="outline" onClick={handleExport}>
               <Download className="mr-2 h-4 w-4" />
-              Export
+              <span className="hidden sm:inline">Export</span>
             </Button>
           </div>
         </div>
 
         <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="relative w-full sm:max-w-xs">
+          <div className="flex flex-col gap-4">
+            <div className="relative w-full">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
@@ -174,7 +241,17 @@ export default function AppointmentsPage() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <AppointmentFilters onFilterChange={handleFilterChange} />
+
+            <AppointmentFilters 
+              onFilterChange={handleFilterChange}
+              onViewChange={handleViewChange}
+              onSortChange={handleSortChange}
+              onGroupByEmailChange={handleGroupByEmailChange}
+              viewType={viewType}
+              groupByEmail={groupByEmail}
+              sortField={sortField}
+              sortDirection={sortDirection}
+            />
           </div>
 
           {isLoading ? (
@@ -195,22 +272,42 @@ export default function AppointmentsPage() {
                 </div>
               ))}
             </div>
-          ) : filteredAppointments.length > 0 ? (
+          ) : sortedAppointments.length > 0 ? (
             <>
-              <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                {filteredAppointments.map((appointment) => (
-                  <AppointmentCard
-                    key={appointment.id}
-                    appointment={appointment}
-                    countryName={apiClient.getCountryName(appointment.country)}
-                    onViewDetails={() => router.push(`/appointments/${appointment.id}`)}
-                  />
-                ))}
-              </div>
+              {viewType === "card" ? (
+                <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                  {sortedAppointments.map((appointment) => (
+                    <AppointmentCard
+                      key={appointment.id}
+                      appointment={appointment}
+                      countryName={apiClient.getCountryName(appointment.country)}
+                      onViewDetails={() => router.push(`/appointments/${appointment.id}`)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <AppointmentTable
+                  appointments={sortedAppointments}
+                  countryNameMap={(code) => apiClient.getCountryName(code)}
+                  groupByEmail={groupByEmail}
+                  sortBy={sortField}
+                  sortDirection={sortDirection}
+                  onViewDetails={(id) => router.push(`/appointments/${id}`)}
+                  onSortChange={(field) => {
+                    // Toggle sort direction if same field is clicked
+                    if (field === sortField) {
+                      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+                    } else {
+                      setSortField(field);
+                      setSortDirection("desc"); // Default to desc for new fields
+                    }
+                  }}
+                />
+              )}
 
               <div className="flex items-center justify-between mt-4">
                 <p className="text-sm text-muted-foreground">
-                  Showing {filteredAppointments.length} of {appointments.length} appointments
+                  Showing {sortedAppointments.length} of {appointments.length} appointments
                 </p>
                 <div className="flex items-center space-x-2">
                   <Button variant="outline" size="sm" onClick={() => handlePageChange(page - 1)} disabled={page === 1}>
