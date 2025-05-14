@@ -2,9 +2,10 @@
 
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { BarChart3, Bot, FileText, Home, LayoutDashboard, Settings, Server, Calendar, Users } from "lucide-react"
+import { BarChart3, Bot, FileText, Home, LayoutDashboard, Settings, Server, Calendar, Users, Sun, Moon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { SystemStatus } from "@/components/system-status"
+import { useTheme } from "@/lib/theme-provider"
 
 interface SidebarProps {
   user: {
@@ -18,6 +19,11 @@ interface SidebarProps {
 
 export function Sidebar({ user, isOpen, currentPath }: SidebarProps) {
   const isAdmin = user.role === "admin"
+  const { theme, setTheme } = useTheme()
+
+  const toggleTheme = () => {
+    setTheme(theme === "dark" ? "light" : "dark")
+  }
 
   const navItems = [
     {
@@ -72,7 +78,7 @@ export function Sidebar({ user, isOpen, currentPath }: SidebarProps) {
 
   if (!isOpen) {
     return (
-      <div className="hidden md:flex flex-col h-full w-16 bg-background border-r">
+      <div className="hidden md:flex flex-col h-full w-16 bg-sidebar-background border-r">
         <div className="flex h-16 items-center justify-center border-b">
           <Link href="/dashboard">
             <div className="flex items-center justify-center h-10 w-10 rounded-full bg-primary/10">
@@ -87,7 +93,11 @@ export function Sidebar({ user, isOpen, currentPath }: SidebarProps) {
               .map((item) => (
                 <li key={item.href} className="w-full">
                   <Link href={item.href}>
-                    <Button variant={currentPath === item.href ? "secondary" : "ghost"} size="icon" className="w-full">
+                    <Button 
+                      variant={currentPath === item.href ? "secondary" : "ghost"} 
+                      size="icon" 
+                      className="w-full"
+                    >
                       <item.icon className="h-5 w-5" />
                       <span className="sr-only">{item.name}</span>
                     </Button>
@@ -96,12 +106,28 @@ export function Sidebar({ user, isOpen, currentPath }: SidebarProps) {
               ))}
           </ul>
         </nav>
+        
+        {/* Theme toggle for collapsed sidebar */}
+        <div className="border-t pt-4 pb-4 flex justify-center">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={toggleTheme}
+            aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+          >
+            {theme === "dark" ? (
+              <Sun className="h-5 w-5" />
+            ) : (
+              <Moon className="h-5 w-5" />
+            )}
+          </Button>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className={cn("flex flex-col h-full w-64 bg-background border-r", isOpen ? "block" : "hidden md:block")}>
+    <div className={cn("flex flex-col h-full w-64 bg-sidebar-background border-r", isOpen ? "block" : "hidden md:block")}>
       <div className="flex h-16 items-center px-4 border-b">
         <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
           <Home className="h-5 w-5" />
@@ -115,7 +141,10 @@ export function Sidebar({ user, isOpen, currentPath }: SidebarProps) {
             .map((item) => (
               <li key={item.href}>
                 <Link href={item.href}>
-                  <Button variant={currentPath === item.href ? "secondary" : "ghost"} className="w-full justify-start">
+                  <Button 
+                    variant={currentPath === item.href ? "secondary" : "ghost"} 
+                    className="w-full justify-start"
+                  >
                     <item.icon className="mr-2 h-4 w-4" />
                     {item.name}
                   </Button>
@@ -130,14 +159,31 @@ export function Sidebar({ user, isOpen, currentPath }: SidebarProps) {
         </div>
       </nav>
       <div className="border-t p-4">
-        <div className="flex items-center gap-2 text-sm">
-          <div className="rounded-full h-8 w-8 bg-primary/10 flex items-center justify-center">
-            <span className="font-medium text-primary">{user.name.charAt(0)}</span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm">
+            <div className="rounded-full h-8 w-8 bg-primary/10 flex items-center justify-center">
+              <span className="font-medium text-primary">{user.name.charAt(0)}</span>
+            </div>
+            <div>
+              <p className="font-medium">{user.name}</p>
+              <p className="text-xs text-muted-foreground">{user.role}</p>
+            </div>
           </div>
-          <div>
-            <p className="font-medium">{user.name}</p>
-            <p className="text-xs text-muted-foreground">{user.role}</p>
-          </div>
+          
+          {/* Theme toggle button */}
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={toggleTheme}
+            className="px-2"
+            aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+          >
+            {theme === "dark" ? (
+              <Sun className="h-4 w-4" />
+            ) : (
+              <Moon className="h-4 w-4" />
+            )}
+          </Button>
         </div>
       </div>
     </div>

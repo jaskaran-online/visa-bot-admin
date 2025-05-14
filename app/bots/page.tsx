@@ -14,6 +14,7 @@ import { getAllBots, startBot, stopBot, restartBot, deleteBot } from "@/lib/api/
 import { hasPermission } from "@/lib/auth"
 import { useToast } from "@/hooks/use-toast"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 export default function BotsPage() {
   const [bots, setBots] = useState<BotResponse[]>([])
@@ -31,6 +32,14 @@ export default function BotsPage() {
   const router = useRouter()
   const { toast } = useToast()
   const isAdmin = hasPermission("admin")
+  const isMobile = useIsMobile()
+
+  useEffect(() => {
+    if (!isMobile) {
+      setViewType("table")
+      setGroupByEmail(true)
+    }
+  }, [isMobile])
 
   const fetchBots = async () => {
     try {

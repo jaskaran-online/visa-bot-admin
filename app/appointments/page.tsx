@@ -14,6 +14,7 @@ import { getAllAppointments } from "@/lib/api/appointments"
 import { useToast } from "@/hooks/use-toast"
 import { Skeleton } from "@/components/ui/skeleton"
 import { format } from "date-fns"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 export default function AppointmentsPage() {
   const [appointments, setAppointments] = useState<SuccessfulAppointment[]>([])
@@ -32,6 +33,15 @@ export default function AppointmentsPage() {
   
   const router = useRouter()
   const { toast } = useToast()
+
+  const isMobile = useIsMobile()
+
+  useEffect(() => {
+    if (!isMobile) {
+      setViewType("table")
+      setGroupByEmail(true)
+    }
+  }, [isMobile])
 
   const fetchAppointments = async () => {
     try {
