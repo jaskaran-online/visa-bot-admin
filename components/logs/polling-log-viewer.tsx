@@ -215,11 +215,20 @@ export function PollingLogViewer({
               size="sm"
               onClick={handleTogglePolling}
             >
-              <RefreshCw className={`mr-2 h-4 w-4 ${isPolling ? "animate-spin" : ""}`} />
+              <RefreshCw
+                className={`mr-2 h-4 w-4 ${isPolling ? "animate-spin" : ""}`}
+              />
               {isPolling ? "Auto" : "Manual"}
             </Button>
-            <Button variant="outline" size="sm" onClick={handleManualRefresh} disabled={isLoading}>
-              <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleManualRefresh}
+              disabled={isLoading}
+            >
+              <RefreshCw
+                className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
+              />
               Refresh
             </Button>
             {canExport && (
@@ -242,15 +251,23 @@ export function PollingLogViewer({
           {isLoading && logs.length === 0 ? (
             <div className="flex items-center justify-center p-4">
               <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
-              <span className="ml-2 text-muted-foreground">Loading logs...</span>
+              <span className="ml-2 text-muted-foreground">
+                Loading logs...
+              </span>
             </div>
           ) : filteredLogs.length > 0 ? (
             filteredLogs.map((log, index) => (
-              <div key={index} className="flex items-start gap-2 p-2 border rounded-md">
+              <div
+                key={index}
+                className="flex items-start gap-2 p-2 border rounded-md"
+              >
                 <div className="text-xs text-muted-foreground whitespace-nowrap">
-                  {new Date(log.timestamp).toLocaleTimeString()}
+                  {log?.time_ago}
                 </div>
-                <Badge variant={getBadgeVariant(log.type)} className="whitespace-nowrap">
+                <Badge
+                  variant={getBadgeVariant(log.type)}
+                  className="whitespace-nowrap"
+                >
                   {log.type.toUpperCase()}
                 </Badge>
                 {log.botName && botId === "all" && (
@@ -265,9 +282,9 @@ export function PollingLogViewer({
             ))
           ) : (
             <div className="text-center p-4 text-muted-foreground">
-              {searchQuery || typeFilter !== "all" ? 
-                "No matching logs found. Try adjusting your filters." : 
-                "No logs to display"}
+              {searchQuery || typeFilter !== "all"
+                ? "No matching logs found. Try adjusting your filters."
+                : "No logs to display"}
             </div>
           )}
         </div>
@@ -280,18 +297,23 @@ export function PollingLogViewer({
             }`}
           />
           <span className="text-sm text-muted-foreground">
-            <span className="hidden sm:inline">{isPolling ? "Auto-refresh enabled" : "Auto-refresh disabled"}</span>
+            <span className="hidden sm:inline">
+              {isPolling ? "Auto-refresh enabled" : "Auto-refresh disabled"}
+            </span>
             <span className="sm:hidden">{isPolling ? "Auto" : "Manual"}</span>
           </span>
           <span className="ml-4 text-sm text-muted-foreground">
             <Clock className="h-3 w-3 inline mr-1" />
-            <span className="hidden sm:inline">Refresh interval:</span> {pollInterval / 1000}s
+            <span className="hidden sm:inline">Refresh interval:</span>{" "}
+            {pollInterval / 1000}s
           </span>
         </div>
         <span className="text-xs text-muted-foreground">
-          {lastUpdated ? `Last updated: ${lastUpdated.toLocaleTimeString()}` : "Not updated yet"}
+          {lastUpdated
+            ? `Last updated: ${lastUpdated.toLocaleTimeString()}`
+            : "Not updated yet"}
         </span>
       </CardFooter>
     </Card>
-  )
+  );
 }

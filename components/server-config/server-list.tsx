@@ -90,7 +90,7 @@ export function ServerList({ servers, activeServerId, isLoading, onUpdate, onDel
 
   return (
     <div>
-      <div className="rounded-md border">
+      <div className="rounded-md border bg-background">
         <Table>
           <TableHeader>
             <TableRow>

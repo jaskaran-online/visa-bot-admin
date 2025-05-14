@@ -23,7 +23,7 @@ export function BotLogs({ botId, isAdmin }: BotLogsProps) {
     <Card>
       <CardHeader>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
+          <div className="bg-background flex flex-col gap-2">
             <CardTitle>Bot Logs</CardTitle>
             <CardDescription>Activity logs for this bot</CardDescription>
           </div>

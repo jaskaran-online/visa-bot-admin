@@ -86,7 +86,7 @@ export function BotTable({
 
   // Render regular table (no grouping)
   const renderRegularTable = () => (
-    <Table className="border">
+    <Table className="border bg-background">
       <TableHeader className="bg-muted/50">
         <TableRow>
           <TableHead onClick={() => onSortChange('config.EMAIL')} className="cursor-pointer hover:bg-muted">
