@@ -4,16 +4,18 @@ import { useState, useEffect } from "react"
 import { MainLayout } from "@/components/layout/main-layout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import { apiClient } from "@/lib/api-client"
 import { getAllBots } from "@/lib/api/bots"
+import { getAllLogs } from "@/lib/api/logs"
 import { hasPermission } from "@/lib/auth"
-import { LogsTable } from "@/components/logs/logs-table"
-import { LogsFilter } from "@/components/logs/logs-filter"
-import { LogsStatistics } from "@/components/logs/logs-statistics"
+import { Slider } from "@/components/ui/slider"
+import { Label } from "@/components/ui/label"
+import { Separator } from "@/components/ui/separator"
+import { Download, RefreshCw, Trash2, Filter, Clock, Search } from "lucide-react"
 import { PollingLogViewer } from "@/components/logs/polling-log-viewer"
-import { Download, RefreshCw, Trash2 } from "lucide-react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,37 +27,63 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { format } from "date-fns"
+import { 
+  Popover,
+  PopoverContent,
+  PopoverTrigger
+} from "@/components/ui/popover"
 
 export default function LogsPage() {
   const [logs, setLogs] = useState<any[]>([])
-  const [filteredLogs, setFilteredLogs] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [bots, setBots] = useState<any[]>([])
+  const [selectedBotId, setSelectedBotId] = useState<string>("all")
+  const [logLevel, setLogLevel] = useState<string>("all")
+  const [searchQuery, setSearchQuery] = useState<string>("")
   const [isClearDialogOpen, setIsClearDialogOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState("realtime")
-  const [filters, setFilters] = useState({
-    botId: "all",
-    logLevel: "all",
-    dateRange: [undefined, undefined] as [Date | undefined, Date | undefined],
-    searchQuery: "",
-  })
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [refreshInterval, setRefreshInterval] = useState<number>(30) // in seconds
+  
   const { toast } = useToast()
   const isAdmin = hasPermission("admin")
 
-  // Add a state for bots
-  const [bots, setBots] = useState<any[]>([])
+  const FACILITIES = [
+    {
+      facilities: {
+        "89": "Calgary",
+        "90": "Halifax",
+        "91": "Montreal (Closed)",
+        "92": "Ottawa",
+        "93": "Quebec City",
+        "94": "Toronto",
+        "95": "Vancouver",
+      },
+      asc_facilities: {
+        "89": "Calgary ASC",
+        "90": "Halifax ASC",
+        "91": "Montreal ASC",
+        "92": "Ottawa ASC",
+        "93": "Quebec City ASC",
+        "94": "Toronto ASC",
+        "95": "Vancouver ASC",
+      },
+    },
+  ];
 
+  // Function to fetch logs with filters
   const fetchLogs = async () => {
     try {
       setIsRefreshing(true)
-      const data = await apiClient.getAllLogs()
-      setLogs(data)
-      applyFilters(data)
+      const fetchedLogs = await getAllLogs(100, {
+        botId: selectedBotId,
+        level: logLevel,
+        searchQuery: searchQuery
+      })
+      setLogs(fetchedLogs)
     } catch (error) {
       toast({
         title: "Error fetching logs",
-        description: "Failed to load system logs. Please try again.",
+        description: "Failed to load logs. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -64,13 +92,7 @@ export default function LogsPage() {
     }
   }
 
-  useEffect(() => {
-    if (activeTab !== "realtime") {
-      // fetchLogs()
-    }
-  }, [activeTab, toast])
-
-  // Add this useEffect to fetch bots data
+  // Fetch bots
   useEffect(() => {
     const fetchBots = async () => {
       try {
@@ -78,119 +100,42 @@ export default function LogsPage() {
         setBots(data.bots || [])
       } catch (error) {
         console.error("Failed to fetch bots:", error)
+        toast({
+          title: "Error fetching bots",
+          description: "Failed to load bot list. Please try again.",
+          variant: "destructive",
+        })
         setBots([])
+      } finally {
+        setIsLoading(false)
       }
     }
 
     fetchBots()
-  }, [])
-
-  const applyFilters = (logsData = logs) => {
-    let result = [...logsData]
-
-    // Apply bot filter
-    if (filters.botId !== "all") {
-      result = result.filter((log) => log.botId === filters.botId)
-    }
-
-    // Apply log level filter
-    if (filters.logLevel !== "all") {
-      result = result.filter((log) => log.level === filters.logLevel)
-    }
-
-    // Apply date range filter
-    if (filters.dateRange[0] && filters.dateRange[1]) {
-      result = result.filter((log) => {
-        const logDate = new Date(log.timestamp)
-        return logDate >= filters.dateRange[0]! && logDate <= filters.dateRange[1]!
-      })
-    }
-
-    // Apply search query
-    if (filters.searchQuery) {
-      const query = filters.searchQuery.toLowerCase()
-      result = result.filter(
-        (log) =>
-          log.message.toLowerCase().includes(query) ||
-          (log.botName && log.botName.toLowerCase().includes(query)) ||
-          (log.context && JSON.stringify(log.context).toLowerCase().includes(query)),
-      )
-    }
-
-    // Apply tab filter
-    if (activeTab !== "all" && activeTab !== "realtime") {
-      if (activeTab === "errors") {
-        result = result.filter((log) => log.level === "error")
-      } else if (activeTab === "warnings") {
-        result = result.filter((log) => log.level === "warning")
-      } else if (activeTab === "info") {
-        result = result.filter((log) => log.level === "info")
-      }
-    }
-
-    setFilteredLogs(result)
-  }
-
-  useEffect(() => {
-    applyFilters()
-  }, [filters, activeTab, logs])
-
-  const handleFilterChange = (newFilters: any) => {
-    setFilters({ ...filters, ...newFilters })
-  }
-
-  const handleTabChange = (value: string) => {
-    setActiveTab(value)
-  }
-
-  const handleRefresh = () => {
-    fetchLogs()
-  }
+  }, [toast])
 
   const handleClearLogs = async () => {
     try {
-      const response = await apiClient.clearAllLogs()
-
-      setLogs([])
-      setFilteredLogs([])
+      if (selectedBotId === "all") {
+        toast({
+          title: "Action required",
+          description: "Please select a specific bot to clear logs.",
+          variant: "default",
+        })
+        return
+      }
+      
+      // Use the Bot API to clear logs
+      const response = await apiClient.clearBotLogs(selectedBotId)
 
       toast({
         title: "Logs cleared",
-        description: response.message,
+        description: "Bot logs have been cleared successfully",
       })
     } catch (error) {
       toast({
         title: "Error clearing logs",
-        description: error instanceof Error ? error.message : "Failed to clear system logs. Please try again.",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const handleExportLogs = () => {
-    try {
-      // Create a JSON string of the logs
-      const logsJson = JSON.stringify(filteredLogs, null, 2)
-
-      // Create a blob and download link
-      const blob = new Blob([logsJson], { type: "application/json" })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = `system-logs-${format(new Date(), "yyyy-MM-dd")}.json`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(url)
-
-      toast({
-        title: "Logs exported",
-        description: "System logs have been exported successfully",
-      })
-    } catch (error) {
-      toast({
-        title: "Error exporting logs",
-        description: error instanceof Error ? error.message : "Failed to export system logs. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to clear logs. Please try again.",
         variant: "destructive",
       })
     }
@@ -198,111 +143,229 @@ export default function LogsPage() {
 
   return (
     <MainLayout>
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">System Logs</h1>
-            <p className="text-muted-foreground">Monitor and analyze system and bot activity logs</p>
+            <h1 className="text-3xl font-bold tracking-tight">Bot Logs</h1>
+            <p className="text-muted-foreground">
+              Monitor and analyze bot activity logs
+            </p>
           </div>
-          <div className="flex gap-2">
-            {activeTab !== "realtime" && (
-              <Button variant="outline" onClick={handleRefresh} disabled={isRefreshing}>
-                <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
-                Refresh
-              </Button>
-            )}
-            <Button variant="outline" onClick={handleExportLogs}>
-              <Download className="mr-2 h-4 w-4" />
-              Export
-            </Button>
-            {isAdmin && (
-              <AlertDialog open={isClearDialogOpen} onOpenChange={setIsClearDialogOpen}>
-                <AlertDialogTrigger asChild>
-                  <Button variant="outline">
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Clear Logs
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will permanently delete all system logs. This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => {
-                        handleClearLogs()
-                        setIsClearDialogOpen(false)
-                      }}
-                    >
-                      Clear All Logs
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
-          </div>
+
+          {isAdmin && (
+            <AlertDialog
+              open={isClearDialogOpen}
+              onOpenChange={setIsClearDialogOpen}
+            >
+              <AlertDialogTrigger asChild>
+                <Button variant="outline">
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Clear Logs
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete all logs for the selected bot.
+                    This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => {
+                      handleClearLogs();
+                      setIsClearDialogOpen(false);
+                    }}
+                  >
+                    Clear Bot Logs
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
         </div>
 
-        {activeTab !== "realtime" && (
-          <LogsFilter bots={bots} onFilterChange={handleFilterChange} filters={filters} />
-        )}
+        <Card>
+          <CardHeader>
+            <CardTitle>Log Filters</CardTitle>
+            <CardDescription>
+              Select which bot logs to view and other filter options
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Bot Selection */}
+              <div className="space-y-2">
+                <Label htmlFor="bot-select">Select Bot</Label>
+                <Select value={selectedBotId} onValueChange={setSelectedBotId}>
+                  <SelectTrigger id="bot-select">
+                    <SelectValue placeholder="Select a bot" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Bots</SelectItem>
+                    <SelectItem value="general">System (General)</SelectItem>
+                    {bots.map((bot) => (
+                      <SelectItem key={bot.id} value={bot.id}>
+                        {bot.config.EMAIL} -{" "}
+                        {FACILITIES[0].facilities[bot.config.FACILITY_ID]} - (
+                        {bot.status})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-        {activeTab !== "realtime" && (
-          <div className="grid gap-4 md:grid-cols-3">
-            <LogsStatistics logs={filteredLogs} isLoading={isLoading} />
-          </div>
-        )}
+              {/* Log Level Filter */}
+              <div className="space-y-2">
+                <Label htmlFor="log-level">Log Level</Label>
+                <Select value={logLevel} onValueChange={setLogLevel}>
+                  <SelectTrigger id="log-level">
+                    <SelectValue placeholder="Filter by level" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Levels</SelectItem>
+                    <SelectItem value="info">Info</SelectItem>
+                    <SelectItem value="warning">Warnings</SelectItem>
+                    <SelectItem value="error">Errors</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-        <Tabs defaultValue="realtime" value={activeTab} onValueChange={handleTabChange} className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="realtime">Real-time Logs</TabsTrigger>
-            <TabsTrigger value="all">All Logs</TabsTrigger>
-            <TabsTrigger value="errors">Errors</TabsTrigger>
-            <TabsTrigger value="warnings">Warnings</TabsTrigger>
-            <TabsTrigger value="info">Info</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="realtime" className="space-y-4">
-            <div className="h-[600px]">
-              <PollingLogViewer
-                title="Real-time System Logs"
-                description="Live view of system and bot logs"
-                botId="general"
-                maxEntries={100}
-                pollInterval={30000}
-                canClear={isAdmin}
-                canExport={true}
-              />
+              {/* Search Box */}
+              <div className="space-y-2">
+                <Label htmlFor="log-search">Search Logs</Label>
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="log-search"
+                    type="search"
+                    placeholder="Search log content..."
+                    className="pl-8"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+              </div>
             </div>
-          </TabsContent>
 
-          <TabsContent value={activeTab} className="space-y-4">
-            {activeTab !== "realtime" && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Log Entries</CardTitle>
-                  <CardDescription>
-                    {activeTab === "all"
-                      ? "All system logs"
-                      : activeTab === "errors"
-                        ? "Error logs only"
-                        : activeTab === "warnings"
-                          ? "Warning logs only"
-                          : "Information logs only"}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <LogsTable logs={filteredLogs} isLoading={isLoading} />
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-        </Tabs>
+            <Separator className="my-6" />
+
+            <div className="flex flex-col sm:flex-row justify-between gap-6">
+              <div className="space-y-2 flex-grow max-w-md">
+                <div className="flex items-center justify-between">
+                  <Label>Refresh Interval: {refreshInterval} seconds</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <Clock className="mr-2 h-4 w-4" />
+                        Customize
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80">
+                      <div className="space-y-4">
+                        <h4 className="font-medium">Custom Refresh Interval</h4>
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span>5s</span>
+                            <span>30s</span>
+                            <span>60s</span>
+                          </div>
+                          <Slider
+                            min={5}
+                            max={60}
+                            step={5}
+                            value={[refreshInterval]}
+                            onValueChange={(value) =>
+                              setRefreshInterval(value[0])
+                            }
+                          />
+                        </div>
+                        <div className="flex justify-between">
+                          <div className="grid grid-cols-3 gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setRefreshInterval(5)}
+                            >
+                              5s
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setRefreshInterval(15)}
+                            >
+                              15s
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setRefreshInterval(30)}
+                            >
+                              30s
+                            </Button>
+                          </div>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => setRefreshInterval(60)}
+                          >
+                            1min
+                          </Button>
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <Slider
+                  min={5}
+                  max={60}
+                  step={5}
+                  value={[refreshInterval]}
+                  onValueChange={(value) => setRefreshInterval(value[0])}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="h-[600px]">
+          <PollingLogViewer
+            title={
+              selectedBotId === "all"
+                ? "All Bots Logs"
+                : selectedBotId === "general"
+                ? "System Logs"
+                : "Bot Logs"
+            }
+            description={
+              selectedBotId === "all"
+                ? "Logs from all bots in the system"
+                : selectedBotId === "general"
+                ? "General system logs"
+                : `Logs for ${
+                    bots.find((b) => b.id === selectedBotId)?.config?.EMAIL ||
+                    selectedBotId
+                  }${
+                    bots.find((b) => b.id === selectedBotId)?.config?.FACILITY
+                      ? ` - ${
+                          bots.find((b) => b.id === selectedBotId)?.config
+                            ?.FACILITY
+                        }`
+                      : ""
+                  }`
+            }
+            botId={selectedBotId}
+            maxEntries={100}
+            pollInterval={refreshInterval * 1000}
+            canClear={isAdmin}
+            canExport={true}
+            typeFilter={logLevel}
+            searchQuery={searchQuery}
+          />
+        </div>
       </div>
     </MainLayout>
-  )
+  );
 }

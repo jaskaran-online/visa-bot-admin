@@ -1,10 +1,10 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { RefreshCw, Download, Trash2 } from "lucide-react"
+import { RefreshCw, Download, Trash2, Clock } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { format } from "date-fns"
 import { getBotLogs, clearBotLogs } from "@/lib/api/bots"
@@ -15,6 +15,8 @@ interface LogEntry {
   message: string
   timestamp: string
   type: LogLevel
+  botId?: string
+  botName?: string
 }
 
 interface PollingLogViewerProps {
@@ -25,6 +27,8 @@ interface PollingLogViewerProps {
   pollInterval?: number
   canClear?: boolean
   canExport?: boolean
+  typeFilter?: string
+  searchQuery?: string
 }
 
 export function PollingLogViewer({
@@ -35,6 +39,8 @@ export function PollingLogViewer({
   pollInterval = 30000, // Default to 30 seconds
   canClear = false,
   canExport = true,
+  typeFilter = "all",
+  searchQuery = "",
 }: PollingLogViewerProps) {
   const [logs, setLogs] = useState<LogEntry[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -70,8 +76,35 @@ export function PollingLogViewer({
     }
   }
 
+  // Filter logs based on type and search query
+  const filteredLogs = useMemo(() => {
+    let result = [...logs]
+    
+    // Apply type filter
+    if (typeFilter !== "all") {
+      result = result.filter(log => log.type === typeFilter)
+    }
+    
+    // Apply search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase()
+      result = result.filter(log => 
+        log.message.toLowerCase().includes(query) ||
+        (log.botName && log.botName.toLowerCase().includes(query))
+      )
+    }
+    
+    return result
+  }, [logs, typeFilter, searchQuery])
+
   // Set up polling
   useEffect(() => {
+    // Reset polling when interval changes
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current)
+      pollingIntervalRef.current = null
+    }
+    
     // Fetch logs immediately
     fetchLogs()
 
@@ -124,7 +157,7 @@ export function PollingLogViewer({
   const handleExport = () => {
     try {
       // Create a JSON string of the logs
-      const logsJson = JSON.stringify(logs, null, 2)
+      const logsJson = JSON.stringify(filteredLogs, null, 2)
 
       // Create a blob and download link
       const blob = new Blob([logsJson], { type: "application/json" })
@@ -183,7 +216,7 @@ export function PollingLogViewer({
               onClick={handleTogglePolling}
             >
               <RefreshCw className={`mr-2 h-4 w-4 ${isPolling ? "animate-spin" : ""}`} />
-              {isPolling ? "Auto-refresh On" : "Auto-refresh Off"}
+              {isPolling ? "Auto" : "Manual"}
             </Button>
             <Button variant="outline" size="sm" onClick={handleManualRefresh} disabled={isLoading}>
               <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
@@ -211,22 +244,31 @@ export function PollingLogViewer({
               <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
               <span className="ml-2 text-muted-foreground">Loading logs...</span>
             </div>
-          ) : logs.length > 0 ? (
-            logs.map((log, index) => (
+          ) : filteredLogs.length > 0 ? (
+            filteredLogs.map((log, index) => (
               <div key={index} className="flex items-start gap-2 p-2 border rounded-md">
                 <div className="text-xs text-muted-foreground whitespace-nowrap">
-                  {log?.time_ago}
+                  {new Date(log.timestamp).toLocaleTimeString()}
                 </div>
                 <Badge variant={getBadgeVariant(log.type)} className="whitespace-nowrap">
                   {log.type.toUpperCase()}
                 </Badge>
+                {log.botName && botId === "all" && (
+                  <Badge variant="outline" className="whitespace-nowrap">
+                    {log.botName}
+                  </Badge>
+                )}
                 <div className="flex-1">
                   <p className="text-sm break-words">{log.message}</p>
                 </div>
               </div>
             ))
           ) : (
-            <div className="text-center p-4 text-muted-foreground">No logs to display</div>
+            <div className="text-center p-4 text-muted-foreground">
+              {searchQuery || typeFilter !== "all" ? 
+                "No matching logs found. Try adjusting your filters." : 
+                "No logs to display"}
+            </div>
           )}
         </div>
       </CardContent>
@@ -238,7 +280,12 @@ export function PollingLogViewer({
             }`}
           />
           <span className="text-sm text-muted-foreground">
-            {isPolling ? "Auto-refresh enabled" : "Auto-refresh disabled"}
+            <span className="hidden sm:inline">{isPolling ? "Auto-refresh enabled" : "Auto-refresh disabled"}</span>
+            <span className="sm:hidden">{isPolling ? "Auto" : "Manual"}</span>
+          </span>
+          <span className="ml-4 text-sm text-muted-foreground">
+            <Clock className="h-3 w-3 inline mr-1" />
+            <span className="hidden sm:inline">Refresh interval:</span> {pollInterval / 1000}s
           </span>
         </div>
         <span className="text-xs text-muted-foreground">
