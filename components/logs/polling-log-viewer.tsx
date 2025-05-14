@@ -17,6 +17,7 @@ interface LogEntry {
   type: LogLevel
   botId?: string
   botName?: string
+  time_ago?: string
 }
 
 interface PollingLogViewerProps {
@@ -256,7 +257,7 @@ export function PollingLogViewer({
               </span>
             </div>
           ) : filteredLogs.length > 0 ? (
-            filteredLogs.map((log, index) => (
+            filteredLogs.map((log : LogEntry,  index) => (
               <div
                 key={index}
                 className="flex items-start gap-2 p-2 border rounded-md"
