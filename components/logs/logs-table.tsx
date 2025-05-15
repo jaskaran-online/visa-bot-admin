@@ -65,7 +65,7 @@ export function LogsTable({ logs, isLoading, pageSize = 10 }: LogsTableProps) {
   if (isLoading) {
     return (
       <div className="space-y-4 bg-background">
-        <div className="rounded-md border">
+        <div className="rounded-md bg-background">
           <Table>
             <TableHeader>
               <TableRow>
@@ -116,7 +116,7 @@ export function LogsTable({ logs, isLoading, pageSize = 10 }: LogsTableProps) {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-md border">
+      <div className="rounded-md bg-background">
         <Table>
           <TableHeader>
             <TableRow>

@@ -294,7 +294,7 @@ export function BotTable({
   }
 
   return (
-    <div className="rounded-md border">
+    <div className="rounded-md bg-background">
       <div className="overflow-x-auto">
         {groupByEmail ? renderGroupedTable() : renderRegularTable()}
       </div>

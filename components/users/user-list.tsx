@@ -131,7 +131,7 @@ export function UserList({ users, isLoading, onUpdate, onDelete, onResetPassword
           </p>
         </div>
       ) : (
-        <div className="rounded-md border">
+        <div className="rounded-md bg-background">
           <Table>
             <TableHeader>
               <TableRow>

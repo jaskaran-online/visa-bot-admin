@@ -236,7 +236,7 @@ export function AppointmentFilters({
                 selected={dateRange[0] || dateRange[1]}
                 onSelect={handleDateSelect}
                 initialFocus
-                className="rounded-md border"
+                className="rounded-md bg-background"
               />
             </PopoverContent>
           </Popover>

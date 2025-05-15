@@ -66,7 +66,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
       <Sidebar user={user} isOpen={isSidebarOpen} currentPath={pathname} />
       <div className="flex flex-col flex-1 overflow-hidden">
         <Header user={user} onLogout={handleLogout} onToggleSidebar={toggleSidebar} />
-        <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900 p-4 md:p-6">{children}</main>
+        <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-800/10 p-4 md:p-6">{children}</main>
       </div>
     </div>
   )
