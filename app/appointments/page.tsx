@@ -13,7 +13,7 @@ import { apiClient, type SuccessfulAppointment } from "@/lib/api-client"
 import { getAllAppointments } from "@/lib/api/appointments"
 import { useToast } from "@/hooks/use-toast"
 import { Skeleton } from "@/components/ui/skeleton"
-import { format } from "date-fns"
+import { format, subDays } from "date-fns"
 import { useIsMobile } from "@/hooks/use-mobile"
 
 export default function AppointmentsPage() {
@@ -122,7 +122,7 @@ export default function AppointmentsPage() {
         csv += `"${appointment.email}",`
         csv += `"${apiClient.getCountryName(appointment.country)}",`
         csv += `"${appointment.facility_name}",`
-        csv += `"${format(new Date(appointment.appointment_date), "yyyy-MM-dd")}",`
+        csv += `"${format(subDays(new Date(appointment.appointment_date), 1), "yyyy-MM-dd")}",`
         csv += `"${appointment.appointment_time}",`
         csv += `"${appointment.status}",`
         csv += `"${format(new Date(appointment.booked_at), "yyyy-MM-dd HH:mm:ss")}"\n`

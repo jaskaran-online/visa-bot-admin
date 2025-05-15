@@ -17,7 +17,7 @@ import { type SuccessfulAppointment, type StatisticsSummary } from "@/lib/api-cl
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import { apiClient } from "@/lib/api-client"
-import { format } from "date-fns"
+import { format, subDays } from "date-fns"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export default function DashboardPage() {
@@ -241,7 +241,7 @@ export default function DashboardPage() {
                             <div className="space-y-1">
                               <p className="text-sm font-medium leading-none">{appointment.facility_name}</p>
                               <p className="text-xs text-muted-foreground">
-                                {format(new Date(appointment.appointment_date), "MMM d, yyyy")} • {appointment.appointment_time}
+                                {format(subDays(new Date(appointment.appointment_date), 1), "MMM d, yyyy")} • {appointment.appointment_time}
                               </p>
                             </div>
                             <div className="ml-auto font-medium">
