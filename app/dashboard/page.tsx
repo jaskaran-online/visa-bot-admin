@@ -241,7 +241,7 @@ export default function DashboardPage() {
                             <div className="space-y-1">
                               <p className="text-sm font-medium leading-none">{appointment.facility_name}</p>
                               <p className="text-xs text-muted-foreground">
-                                {format(subDays(new Date(appointment.appointment_date), 1), "MMM d, yyyy")} • {appointment.appointment_time}
+                                {appointment.appointment_date} • {appointment.appointment_time}
                               </p>
                             </div>
                             <div className="ml-auto font-medium">

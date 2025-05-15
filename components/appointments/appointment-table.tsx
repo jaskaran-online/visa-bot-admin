@@ -123,7 +123,7 @@ export function AppointmentTable({
             <TableCell>
               <div className="flex items-center">
                 <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
-                <span>{format(subDays(new Date(appointment.appointment_date), 1), "MMM d, yyyy")}</span>
+                <span>{appointment.appointment_date}</span>
                 {getUpcomingBadge(appointment.appointment_date)}
               </div>
             </TableCell>
@@ -228,7 +228,7 @@ export function AppointmentTable({
                   <TableCell>
                     <div className="flex items-center">
                       <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
-                      <span>{format(subDays(new Date(appointment.appointment_date), 1), "MMM d, yyyy")}</span>
+                      <span>{appointment.appointment_date}</span>
                       {getUpcomingBadge(appointment.appointment_date)}
                     </div>
                   </TableCell>

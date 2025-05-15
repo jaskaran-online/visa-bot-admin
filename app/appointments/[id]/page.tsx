@@ -148,7 +148,7 @@ export default function AppointmentDetailPage({ params }: { params: { id: string
                     <div>
                       <p className="font-medium">Date</p>
                       <p className="text-muted-foreground">
-                          {format(subDays(new Date(appointment.appointment_date), 1), "MMMM d, yyyy")}
+                          {appointment.appointment_date}
                       </p>
                     </div>
                   </div>
@@ -210,7 +210,7 @@ export default function AppointmentDetailPage({ params }: { params: { id: string
                       <div>
                         <p className="font-medium">ASC Appointment Date</p>
                         <p className="text-muted-foreground">
-                          {format(new Date(appointment.asc_appointment_date), "MMMM d, yyyy")}
+                          {appointment.asc_appointment_date}
                         </p>
                       </div>
                     </div>
@@ -231,7 +231,7 @@ export default function AppointmentDetailPage({ params }: { params: { id: string
                     <div>
                       <p className="font-medium">Booked At</p>
                       <p className="text-muted-foreground">
-                        {format(new Date(appointment.booked_at), "MMMM d, yyyy 'at' h:mm a")}
+                        {appointment.booked_at}
                       </p>
                     </div>
                   </div>

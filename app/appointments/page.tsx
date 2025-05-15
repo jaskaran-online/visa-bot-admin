@@ -122,7 +122,7 @@ export default function AppointmentsPage() {
         csv += `"${appointment.email}",`
         csv += `"${apiClient.getCountryName(appointment.country)}",`
         csv += `"${appointment.facility_name}",`
-        csv += `"${format(subDays(new Date(appointment.appointment_date), 1), "yyyy-MM-dd")}",`
+        csv += `"${appointment.appointment_date}",`
         csv += `"${appointment.appointment_time}",`
         csv += `"${appointment.status}",`
         csv += `"${format(new Date(appointment.booked_at), "yyyy-MM-dd HH:mm:ss")}"\n`
