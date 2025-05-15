@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { format } from "date-fns"
+import { format, subDays } from "date-fns"
 import { 
   Table, 
   TableBody, 
@@ -123,7 +123,7 @@ export function AppointmentTable({
             <TableCell>
               <div className="flex items-center">
                 <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
-                <span>{format(new Date(appointment.appointment_date), "MMM d, yyyy")}</span>
+                <span>{format(subDays(new Date(appointment.appointment_date), 1), "MMM d, yyyy")}</span>
                 {getUpcomingBadge(appointment.appointment_date)}
               </div>
             </TableCell>
@@ -228,7 +228,7 @@ export function AppointmentTable({
                   <TableCell>
                     <div className="flex items-center">
                       <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
-                      <span>{format(new Date(appointment.appointment_date), "MMM d, yyyy")}</span>
+                      <span>{format(subDays(new Date(appointment.appointment_date), 1), "MMM d, yyyy")}</span>
                       {getUpcomingBadge(appointment.appointment_date)}
                     </div>
                   </TableCell>

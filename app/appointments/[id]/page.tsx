@@ -10,7 +10,7 @@ import { apiClient, type SuccessfulAppointment } from "@/lib/api-client"
 import { getAppointment, updateAppointment } from "@/lib/api/appointments"
 import { useToast } from "@/hooks/use-toast"
 import { ArrowLeft, Calendar, MapPin, User, Clock, Mail, Bot, CalendarCheck, AlertCircle } from "lucide-react"
-import { format } from "date-fns"
+import { format, subDays } from "date-fns"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export default function AppointmentDetailPage({ params }: { params: { id: string } }) {
@@ -148,7 +148,7 @@ export default function AppointmentDetailPage({ params }: { params: { id: string
                     <div>
                       <p className="font-medium">Date</p>
                       <p className="text-muted-foreground">
-                        {format(new Date(appointment.appointment_date), "MMMM d, yyyy")}
+                          {format(subDays(new Date(appointment.appointment_date), 1), "MMMM d, yyyy")}
                       </p>
                     </div>
                   </div>
