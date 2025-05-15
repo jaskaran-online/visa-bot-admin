@@ -131,7 +131,7 @@ export function Sidebar({ user, isOpen, currentPath }: SidebarProps) {
       <div className="flex h-16 items-center px-4 border-b">
         <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
           <Home className="h-5 w-5" />
-          <span>USA VISA Bot System</span>
+          <span>Bot System</span>
         </Link>
       </div>
       <nav className="flex-1 overflow-y-auto py-4">
