@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 
-const API_BASE_URL = typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.hostname}:8000` : 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '';
 
 type Metrics = {
   cpu: number | null;
@@ -25,7 +25,7 @@ export const MetricsSseViewer: React.FC = () => {
 
       eventSourceRef.current.onopen = () => {
         setIsConnected(true);
-        setMetrics(prev => ({ ...prev, error: undefined })); // Clear previous error on connect
+        setMetrics(prev => ({ ...prev, error: undefined }));
       };
 
       eventSourceRef.current.onmessage = (event) => {
