@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { MainLayout } from "@/components/layout/main-layout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -14,7 +15,7 @@ import { hasPermission } from "@/lib/auth"
 import { Slider } from "@/components/ui/slider"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { Download, RefreshCw, Trash2, Filter, Clock, Search } from "lucide-react"
+import { Download, RefreshCw, Trash2, Filter, Clock, Search, ActivitySquare } from "lucide-react"
 import { PollingLogViewer } from "@/components/logs/polling-log-viewer"
 import {
   AlertDialog,
@@ -32,6 +33,7 @@ import {
   PopoverContent,
   PopoverTrigger
 } from "@/components/ui/popover"
+import router from "next/router"
 
 export default function LogsPage() {
   const [logs, setLogs] = useState<any[]>([])
@@ -44,8 +46,16 @@ export default function LogsPage() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [refreshInterval, setRefreshInterval] = useState<number>(30) // in seconds
   
+  const router = useRouter()
   const { toast } = useToast()
   const isAdmin = hasPermission("admin")
+  
+  // Helper function to safely get facility name
+  const getFacilityName = (facilityId: string): string => {
+    if (!facilityId) return "";
+    const facilities = FACILITIES[0].facilities;
+    return facilities[facilityId as keyof typeof facilities] || facilityId;
+  };
 
   const FACILITIES = [
     {
@@ -151,40 +161,51 @@ export default function LogsPage() {
               Monitor and analyze bot activity logs
             </p>
           </div>
-
-          {isAdmin && (
-            <AlertDialog
-              open={isClearDialogOpen}
-              onOpenChange={setIsClearDialogOpen}
-            >
-              <AlertDialogTrigger asChild>
-                <Button variant="outline">
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Clear Logs
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will permanently delete all logs for the selected bot.
-                    This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={() => {
-                      handleClearLogs();
-                      setIsClearDialogOpen(false);
-                    }}
-                  >
-                    Clear Bot Logs
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
+          <div className="flex gap-2">
+            {selectedBotId !== "all" && selectedBotId !== "general" && (
+              <Button 
+                variant="default"
+                onClick={() => router.push(`/logs/${selectedBotId}`)}
+              >
+                <ActivitySquare className="mr-2 h-4 w-4" />
+                View Live Logs
+              </Button>
+            )}
+            
+            {isAdmin && (
+              <AlertDialog
+                open={isClearDialogOpen}
+                onOpenChange={setIsClearDialogOpen}
+              >
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Clear Logs
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently delete all logs for the selected bot.
+                      This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => {
+                        handleClearLogs();
+                        setIsClearDialogOpen(false);
+                      }}
+                    >
+                      Clear Bot Logs
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </div>
         </div>
 
         <Card>
@@ -209,7 +230,7 @@ export default function LogsPage() {
                     {bots.map((bot) => (
                       <SelectItem key={bot.id} value={bot.id}>
                         {bot.config.EMAIL} -{" "}
-                        {FACILITIES[0].facilities[bot.config.FACILITY_ID]} - (
+                        {getFacilityName(bot.config.FACILITY_ID)} - (
                         {bot.status})
                       </SelectItem>
                     ))}
@@ -348,11 +369,8 @@ export default function LogsPage() {
                     bots.find((b) => b.id === selectedBotId)?.config?.EMAIL ||
                     selectedBotId
                   }${
-                    bots.find((b) => b.id === selectedBotId)?.config?.FACILITY
-                      ? ` - ${
-                          bots.find((b) => b.id === selectedBotId)?.config
-                            ?.FACILITY
-                        }`
+                    bots.find((b) => b.id === selectedBotId)?.config?.FACILITY_ID
+                      ? ` - ${getFacilityName(bots.find((b) => b.id === selectedBotId)?.config?.FACILITY_ID)}` 
                       : ""
                   }`
             }
