@@ -44,7 +44,7 @@ export default function LoginPage() {
 
         toast({
           title: "Login successful",
-          description: "Welcome to the USA VISA Appointment Bot System",
+          description: "Welcome to the VISA Bot System",
         })
 
         router.push("/dashboard")
@@ -65,7 +65,7 @@ export default function LoginPage() {
 
         toast({
           title: "Login successful",
-          description: "Welcome to the USA VISA Appointment Bot System",
+          description: "Welcome to the VISA Bot System",
         })
 
         router.push("/dashboard")
@@ -90,7 +90,7 @@ export default function LoginPage() {
           <div className="flex justify-center mb-4">
             <Image src="/logo.png" alt="Bot System Logo" width={80} height={80} />
           </div>
-          <CardTitle className="text-2xl font-bold">USA VISA Appointment Bot</CardTitle>
+          <CardTitle className="text-2xl font-bold">VISA Bot</CardTitle>
           <CardDescription>Enter your credentials to access the admin panel</CardDescription>
         </CardHeader>
         <CardContent>
