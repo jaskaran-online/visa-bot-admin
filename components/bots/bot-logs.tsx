@@ -5,19 +5,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search, Filter, Clock } from "lucide-react"
-import { PollingLogViewer } from "@/components/logs/polling-log-viewer"
+import { PollingLogViewer } from "@/components/logs/polling-log-viewer";
+import { StreamingLogViewer } from "@/components/logs/StreamingLogViewer";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider"
 import { Label } from "@/components/ui/label"
 
 interface BotLogsProps {
-  botId: string
-  isAdmin: boolean
+  botId: string;
+  isAdmin: boolean;
+  apiKey: string; // Added for StreamingLogViewer
 }
 
-export function BotLogs({ botId, isAdmin }: BotLogsProps) {
+export function BotLogs({ botId, isAdmin, apiKey }: BotLogsProps) {
   const [searchQuery, setSearchQuery] = useState("")
-  const [typeFilter, setTypeFilter] = useState("all")
-  const [pollInterval, setPollInterval] = useState(30)  // seconds
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [pollInterval, setPollInterval] = useState(30);  // seconds
+  const [logViewMode, setLogViewMode] = useState<'polling' | 'streaming'>('polling');
 
   return (
     <Card>
@@ -25,8 +29,14 @@ export function BotLogs({ botId, isAdmin }: BotLogsProps) {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="bg-background flex flex-col gap-2">
             <CardTitle>Bot Logs</CardTitle>
-            <CardDescription>Activity logs for this bot</CardDescription>
+            <CardDescription>View bot activity logs via polling or real-time streaming.</CardDescription>
           </div>
+          <Tabs value={logViewMode} onValueChange={(value) => setLogViewMode(value as 'polling' | 'streaming')} className="w-full sm:w-auto">
+            <TabsList>
+              <TabsTrigger value="polling">Polling</TabsTrigger>
+              <TabsTrigger value="streaming">Streaming</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
 
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mt-4">
@@ -56,6 +66,7 @@ export function BotLogs({ botId, isAdmin }: BotLogsProps) {
               </Select>
             </div>
             
+            {logViewMode === 'polling' && (
             <div className="flex items-center gap-2 w-full sm:w-auto min-w-[220px]">
               <Clock className="h-4 w-4 text-muted-foreground" />
               <div className="space-y-0.5 flex-grow">
@@ -73,11 +84,13 @@ export function BotLogs({ botId, isAdmin }: BotLogsProps) {
                 />
               </div>
             </div>
+            )}
           </div>
         </div>
       </CardHeader>
       <CardContent>
         <div className="h-[400px]">
+          {logViewMode === 'polling' && (
           <PollingLogViewer
             title="Bot Activity Logs"
             description="Logs for this bot"
@@ -89,6 +102,15 @@ export function BotLogs({ botId, isAdmin }: BotLogsProps) {
             typeFilter={typeFilter}
             searchQuery={searchQuery}
           />
+          )}
+          {logViewMode === 'streaming' && (
+            <StreamingLogViewer
+              botId={botId}
+              apiKey={apiKey}
+              title="Real-time Bot Activity"
+              maxEntries={200}
+            />
+          )}
         </div>
       </CardContent>
     </Card>

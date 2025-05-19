@@ -31,9 +31,11 @@ export default function BotDetailPage({ params }: { params: { id: string } }) {
   const [bot, setBot] = useState<BotResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const router = useRouter()
-  const { toast } = useToast()
-  const isAdmin = hasPermission("admin")
+  const router = useRouter();
+  const { toast } = useToast();
+  const isAdmin = hasPermission("admin");
+  // Retrieve API key (ensure NEXT_PUBLIC_BOT_API_KEY is set in your .env.local or environment)
+  const apiKey = process.env.NEXT_PUBLIC_BOT_API_KEY || "";
 
   const fetchBot = async () => {
     try {
@@ -289,12 +291,12 @@ export default function BotDetailPage({ params }: { params: { id: string } }) {
                 <TabsTrigger value="configuration">Configuration</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="logs" className="mt-4">
-                <BotLogs botId={params.id} isAdmin={isAdmin} />
-              </TabsContent>
-
               <TabsContent value="configuration" className="mt-4">
                 <BotConfiguration bot={bot} isAdmin={isAdmin} />
+              </TabsContent>
+
+              <TabsContent value="logs" className="mt-4">
+                <BotLogs botId={params.id} isAdmin={isAdmin} apiKey={apiKey} />
               </TabsContent>
             </Tabs>
           </>
