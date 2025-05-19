@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { MainLayout } from "@/components/layout/main-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Bot, Calendar, CheckCircle, Clock, Server, XCircle, ArrowRight } from "lucide-react"
+import { Bot, Calendar, CheckCircle, Clock, Server, XCircle, ArrowRight, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { 
@@ -412,6 +412,17 @@ export default function DashboardPage() {
                         <div className="flex items-center">
                           <Calendar className="mr-2 h-4 w-4" />
                           View Appointments
+                        </div>
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        className="w-full justify-between" 
+                        variant="outline"
+                        onClick={() => router.push("/dashboard/logs")}
+                      >
+                        <div className="flex items-center">
+                          <FileText className="mr-2 h-4 w-4" />
+                          Live Logs
                         </div>
                         <ArrowRight className="h-4 w-4" />
                       </Button>

@@ -51,6 +51,12 @@ export function Sidebar({ user, isOpen, currentPath }: SidebarProps) {
       allowedRoles: ["admin", "viewer"],
     },
     {
+      name: "Live Logs",
+      href: "/dashboard/logs",
+      icon: FileText,
+      allowedRoles: ["admin", "viewer"],
+    },
+    {
       name: "Statistics",
       href: "/statistics",
       icon: BarChart3,
