@@ -120,6 +120,7 @@
 }
 
 @layer base {
+  /* Default light theme variables */
   :root {
     --background: 0 0% 100%;
     --foreground: 0 0% 3.9%;
@@ -127,7 +128,7 @@
     --card-foreground: 0 0% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
+    --primary: 222 47% 11%; /* Default primary (blue-based) */
     --primary-foreground: 0 0% 98%;
     --secondary: 0 0% 96.1%;
     --secondary-foreground: 0 0% 9%;
@@ -139,7 +140,7 @@
     --destructive-foreground: 0 0% 98%;
     --border: 0 0% 89.8%;
     --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
+    --ring: 222 47% 11%; /* Default ring (blue-based) */
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
@@ -173,6 +174,74 @@
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
   }
+}
+
+/* Color scheme specific variables */
+/* Blue theme (default) */
+:root[data-color-scheme="blue"] {
+  --primary: 222 47% 11%;
+  --ring: 222 47% 11%;
+}
+
+/* Green theme */
+:root[data-color-scheme="green"] {
+  --primary: 142 71% 45%;
+  --ring: 142 71% 45%;
+}
+
+/* Purple theme */
+:root[data-color-scheme="purple"] {
+  --primary: 270 61% 50%;
+  --ring: 270 61% 50%;
+}
+
+/* Orange theme */
+:root[data-color-scheme="orange"] {
+  --primary: 24 95% 53%;
+  --ring: 24 95% 53%;
+}
+
+/* Red theme */
+:root[data-color-scheme="red"] {
+  --primary: 0 72% 51%;
+  --ring: 0 72% 51%;
+}
+
+/* Slate theme */
+:root[data-color-scheme="slate"] {
+  --primary: 215 17% 45%;
+  --ring: 215 17% 45%;
+}
+
+/* Dark mode color scheme overrides */
+.dark[data-color-scheme="blue"] {
+  --primary: 213 85% 61%;
+  --ring: 213 85% 61%;
+}
+
+.dark[data-color-scheme="green"] {
+  --primary: 142 71% 45%;
+  --ring: 142 71% 45%;
+}
+
+.dark[data-color-scheme="purple"] {
+  --primary: 270 67% 66%;
+  --ring: 270 67% 66%;
+}
+
+.dark[data-color-scheme="orange"] {
+  --primary: 24 95% 66%;
+  --ring: 24 95% 66%;
+}
+
+.dark[data-color-scheme="red"] {
+  --primary: 0 72% 65%;
+  --ring: 0 72% 65%;
+}
+
+.dark[data-color-scheme="slate"] {
+  --primary: 215 20% 65%;
+  --ring: 215 20% 65%;
 }
 
 @layer base {
