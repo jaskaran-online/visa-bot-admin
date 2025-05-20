@@ -102,9 +102,9 @@ export function Sidebar({ user, isOpen, currentPath }: SidebarProps) {
                     <Button 
                       variant={currentPath === item.href ? "secondary" : "ghost"} 
                       size="icon" 
-                      className="w-full"
+                      className={`w-full ${currentPath === item.href ? 'bg-primary/10 text-primary hover:bg-primary/20' : ''}`}
                     >
-                      <item.icon className="h-5 w-5" />
+                      <item.icon className={`h-5 w-5 ${currentPath === item.href ? 'text-primary' : ''}`} />
                       <span className="sr-only">{item.name}</span>
                     </Button>
                   </Link>
@@ -135,8 +135,8 @@ export function Sidebar({ user, isOpen, currentPath }: SidebarProps) {
   return (
     <div className={cn("flex flex-col h-full w-64 bg-sidebar-background border-r", isOpen ? "block" : "hidden md:block")}>
       <div className="flex h-16 items-center px-4 border-b">
-        <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-          <Home className="h-5 w-5" />
+        <Link href="/dashboard" className="flex items-center gap-2 font-semibold text-primary">
+          <Home className="h-5 w-5 text-primary" />
           <span>Bot System</span>
         </Link>
       </div>
@@ -149,9 +149,9 @@ export function Sidebar({ user, isOpen, currentPath }: SidebarProps) {
                 <Link href={item.href}>
                   <Button 
                     variant={currentPath === item.href ? "secondary" : "ghost"} 
-                    className="w-full justify-start"
+                    className={`w-full justify-start ${currentPath === item.href ? 'bg-primary/10 text-primary hover:bg-primary/20' : ''}`}
                   >
-                    <item.icon className="mr-2 h-4 w-4" />
+                    <item.icon className={`mr-2 h-4 w-4 ${currentPath === item.href ? 'text-primary' : ''}`} />
                     {item.name}
                   </Button>
                 </Link>
@@ -167,7 +167,7 @@ export function Sidebar({ user, isOpen, currentPath }: SidebarProps) {
       <div className="border-t p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm">
-            <div className="rounded-full h-8 w-8 bg-primary/10 flex items-center justify-center">
+            <div className="rounded-full h-8 w-8 bg-primary/15 flex items-center justify-center">
               <span className="font-medium text-primary">{user.name.charAt(0)}</span>
             </div>
             <div>
