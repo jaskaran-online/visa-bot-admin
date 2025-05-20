@@ -11,8 +11,7 @@ import { useIsMobile } from "@/hooks/use-mobile"
 
 export function MainLayout({ children }: { children: React.ReactNode }) {
   const isMobile = useIsMobile()
-
-  console.log("isMobile", isMobile)
+  
   const [user, setUser] = useState<{ name: string; email: string; role: string } | null>(null)
   const [isSidebarOpen, setIsSidebarOpen] = useState(!isMobile)
   const router = useRouter()
