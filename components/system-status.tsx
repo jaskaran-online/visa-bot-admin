@@ -59,17 +59,19 @@ export function SystemStatus() {
   }
   
   return (
-    <Card className="bg-muted/50">
-      <CardContent className="py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+    <Card className="overflow-hidden border-l-4 shadow-sm" style={{ borderLeftColor: status === "operational" ? "rgb(34, 197, 94)" : status === "degraded" ? "rgb(245, 158, 11)" : status === "outage" ? "rgb(239, 68, 68)" : "rgb(156, 163, 175)" }}>
+      <CardContent>
+        <div className="flex items-start justify-between flex-col gap-2 ">
+          <div className="flex items-center gap-2 w-full px-1">
             {getStatusIcon()}
-            <span className="text-sm font-medium">{getStatusText()}</span>
+            <span className="text-sm font-medium w-full">{getStatusText()}</span>
           </div>
           {lastChecked && (
-            <span className="text-xs text-muted-foreground">
-              {lastChecked.toLocaleTimeString()}
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-muted-foreground">
+                Updated {lastChecked.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            </div>
           )}
         </div>
       </CardContent>
